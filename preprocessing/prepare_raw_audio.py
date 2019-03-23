@@ -1,7 +1,16 @@
+"""
+Created on Fri March 22, 2019
+
+@author: Gustavo Cid Ornelas
+"""
 import scipy.io.wavfile
 import csv
 
 if __name__ == "__main__":
+    """
+    Script that gets the raw audio from the IEMOCAP dataset. Should be executed only once to get the FC_raw_audio.csv 
+    file, which contains the ids and audio samples for the data that is used by our model.
+    """
 
     # output file
     out_file = "../data/processed-data/FC_raw_audio.csv"
