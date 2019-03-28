@@ -5,6 +5,7 @@ Created on Fri March 22, 2019
 """
 import numpy as np
 import random
+import tensorflow as tf
 
 
 class ProcessDataAudio:
@@ -22,29 +23,26 @@ class ProcessDataAudio:
         self.data_path = data_path  # e. g. '../data/processed-data/'
 
         # loading the audio data and the labels
-        self.audio_data = self.load_audio()
-        self.labels = self.load_labels()
+        self.audio_data = self._load_audio()
+        self.labels = self._load_labels()
 
-    def load_audio(self):
+    def _load_audio(self):
         """
         Loads the audio FC_raw_audio.csv file  and creates a list with all the audio samples as arrays
 
         Returns
         ----------
-        audio_data (list): list of arrays that correspond to the raw audio samples
+        audio_data (array): array of shape [num_samples, 160.000] corresponding to the truncated audios
         """
-        audio_file = self.data_path + 'FC_raw_audio.csv'
+        print('Loading the audio data...')
+        audio_file = self.data_path + 'FC_raw_audio.npy'
 
         # reading the audio file
-        with open(audio_file) as f:
-            lis = [line.split() for line in f]
-
-        # audio samples in the second column
-        audio_data = lis[1::2]
+        audio_data = np.load(audio_file)
 
         return audio_data
 
-    def load_labels(self):
+    def _load_labels(self):
         """
         Loads the audio FC_label.txt file  and creates a list with all of the labels
 
@@ -52,6 +50,7 @@ class ProcessDataAudio:
         ----------
         labels (list): list with the labels in the same order as the audio_data
         """
+        print('Loading the labels...')
 
         labels_file = self.data_path + 'FC_label.txt'
 
@@ -71,7 +70,7 @@ class ProcessDataAudio:
 
         Returns
         ----------
-        train_audio_data, test_audio_data (list): list of arrays that correspond to the raw audio samples
+        train_audio_data, test_audio_data (array): arrays that correspond to the (truncated) raw audio samples
         train_labels, test_labels (list): list with the labels in the same order as the audio_data
         """
 
@@ -87,16 +86,39 @@ class ProcessDataAudio:
         num_train = np.ceil(alpha * num_samples)
 
         training_indexes = random.sample(range(num_samples), int(num_train))
+        test_indexes = [i for i in range(num_samples) if i not in training_indexes]
 
+        print('Splitting the data ...')
         # splitting into training data
-        train_audio_data = [self.audio_data[i] for i in training_indexes]
+        train_audio_data = self.audio_data[training_indexes, :]
         train_labels = [self.labels[i] for i in training_indexes]
 
         # splitting into test data
-        test_audio_data = [self.audio_data[i] for i in range(num_samples) if i not in training_indexes]
-        test_labels = [self.labels[i] for i in range(num_samples) if i not in training_indexes]
+        test_audio_data = self.audio_data[test_indexes, :]
+        test_labels = [self.labels[i] for i in test_indexes]
 
         return train_audio_data, train_labels, test_audio_data, test_labels
+
+    def get_batches(self, train_audio_data, batch_size):
+        """
+        Reshapes the training data to match the format expected by the model, which is a tensor of shape
+        [batch_size, 1, raw_audio_length, 1]
+
+
+        Parameters
+        ----------
+        batch_size (int): batch size
+
+        Returns
+        ----------
+        audio_input, test_audio_data (tensor): tensor of the audio samples to be fed to the model
+        """
+        raw_audio_length = train_audio_data.shape[1]
+        print(raw_audio_length)
+
+        audio_input = tf.reshape(train_audio_data, [batch_size, 1, raw_audio_length, 1])
+
+        return audio_input
 
 
 if __name__ == '__main__':
@@ -105,5 +127,6 @@ if __name__ == '__main__':
     data = ProcessDataAudio(path)
 
     data.split_train_test(alpha=0.9)
+
 
 
