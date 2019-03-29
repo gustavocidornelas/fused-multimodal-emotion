@@ -83,7 +83,7 @@ class AudioModel:
 
         Returns
         ----------
-        (tensor)
+        (GRUCell object): instance of a GRU cell
         """
 
         # a single instance of the GRU
@@ -95,8 +95,9 @@ class AudioModel:
 
         Returns
         ----------
-
+        (DropoutWrapper object): instance of a GRU cell with the specified dropout probability
         """
+
         # specified dropout between the layers
         return tf.contrib.rnn.DropoutWrapper(self.gru_cell(), input_keep_prob=self.dr_prob,
                                              output_keep_prob=self.dr_prob)
@@ -126,6 +127,7 @@ class AudioModel:
         """
         Creates the output layer, which is a multi-layer perceptron
         """
+
         print('Creating the output layers...')
 
         self.M = tf.Variable(tf.random_uniform([self.hidden_dim, self.num_categories],
@@ -171,5 +173,5 @@ class AudioModel:
         self._create_recursive_net()
         self._create_output_layers()
         #self._create_optimizer()
-        self._create_summary()
+        #self._create_summary()
 
