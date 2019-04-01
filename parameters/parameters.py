@@ -19,6 +19,8 @@ batch_size = 32
 num_training_steps = 10000
 # learning rate
 learning_rate = 3e-3
+# number of epochs
+num_epochs = 5
 
 ##################################
 # Audio
@@ -26,8 +28,9 @@ learning_rate = 3e-3
 # number of filters in each convolutional layer
 num_filters = [4, 8]
 filter_lengths = [25, 5]
-n_pool = 200
+n_pool = [50, 10]
 encoder_size = 250
 hidden_dim = 200
 num_layers = 1
+dr_prob = 0.55
 
