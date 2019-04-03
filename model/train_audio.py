@@ -43,8 +43,16 @@ if __name__ == '__main__':
 
         # training loop
         print("Training...")
-        for i in range(num_training_steps):
-            print('Iteration ' + str(i))
-            _, summary = sess.run([model.optimizer, model.summary_op])
-            writer.add_summary(summary, global_step=model.global_step.eval())
+
+        # feeding the batches to the model
+        while True:
+            try:
+                print('Running batch')
+                _, accuracy, loss, summary = sess.run([model.optimizer, model.accuracy, model.loss, model.summary_op])
+                writer.add_summary(summary, global_step=model.global_step.eval())
+
+            except tf.errors.OutOfRangeError:
+                print('End of dataset')
+                break
+
 
