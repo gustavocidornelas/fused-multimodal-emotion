@@ -4,7 +4,7 @@ Created on Mon March 25, 2019
 @author: Gustavo Cid Ornelas
 """
 import tensorflow as tf
-
+import numpy as np
 
 class AudioModel:
     """
@@ -49,22 +49,23 @@ class AudioModel:
         """
         print('Creating the convolutional layers...')
 
-        # first convolutional layer
-        conv_layer1 = tf.layers.conv1d(self.audio_input, filters=self.num_filters[0],
-                                       kernel_size=self.filter_lengths[0], padding='same', activation=tf.nn.relu)
+        with tf.name_scope('CNN'):
+            # first convolutional layer
+            conv_layer1 = tf.layers.conv1d(self.audio_input, filters=self.num_filters[0],
+                                           kernel_size=self.filter_lengths[0], padding='same', activation=tf.nn.relu)
 
-        # max pooling across time
-        max_pool1 = tf.layers.max_pooling1d(conv_layer1, pool_size=self.n_pool[0], strides=self.n_pool[0])
+            # max pooling across time
+            max_pool1 = tf.layers.max_pooling1d(conv_layer1, pool_size=self.n_pool[0], strides=self.n_pool[0])
 
-        # second convolutional layer
-        conv_layer2 = tf.layers.conv1d(max_pool1, filters=self.num_filters[1],
-                                       kernel_size=self.filter_lengths[1], padding='same', activation=tf.nn.relu)
+            # second convolutional layer
+            conv_layer2 = tf.layers.conv1d(max_pool1, filters=self.num_filters[1],
+                                           kernel_size=self.filter_lengths[1], padding='same', activation=tf.nn.relu)
 
-        # max pooling across time
-        max_pool2 = tf.layers.max_pooling1d(conv_layer2, pool_size=self.n_pool[1], strides=self.n_pool[1])
+            # max pooling across time
+            max_pool2 = tf.layers.max_pooling1d(conv_layer2, pool_size=self.n_pool[1], strides=self.n_pool[1])
 
-        # max pooling across channels
-        self.output_cnn = tf.reduce_max(max_pool2, reduction_indices=[2], keepdims=True)
+            # max pooling across channels
+            self.output_cnn = tf.reduce_max(max_pool2, reduction_indices=[2], keepdims=True)
 
     def gru_cell(self):
         """
@@ -95,17 +96,18 @@ class AudioModel:
         """
         print('Creating the recurrent layers...')
 
-        # first, we split the output of the CNN to be fed as a sequence to the RNN
-        # TODO: fix this to work with the full tensor
-        rnn_input = tf.split(self.output_cnn[:, :, 0], self.conv_out_length, axis=1)
+        with tf.name_scope('RNN'):
+            # first, we split the output of the CNN to be fed as a sequence to the RNN
+            # TODO: fix this to work with the full tensor
+            rnn_input = tf.split(self.output_cnn[:, :, 0], self.conv_out_length, axis=1)
 
-        # creating the list with the specified number of layers of GRU cells with dropout
-        cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers)])
+            # creating the list with the specified number of layers of GRU cells with dropout
+            cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers)])
 
-        # simulating the time steps in the RNN (returns output activations and last hidden state)
-        self.outputs_enc, last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input, dtype=tf.float64)
+            # simulating the time steps in the RNN (returns output activations and last hidden state)
+            self.outputs_enc, last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input, dtype=tf.float64)
 
-        self.final_encoder = last_states_enc[-1]
+            self.final_encoder = last_states_enc[-1]
 
     def _create_output_layers(self):
         """
@@ -113,21 +115,27 @@ class AudioModel:
         """
         print('Creating the output layers...')
 
-        self.M = tf.Variable(tf.random_uniform([self.hidden_dim, self.num_categories],
-                                               minval=-0.25,
-                                               maxval=0.25,
-                                               dtype=tf.float64,
-                                               seed=None),
-                             trainable=True, name='weights_matrix')
+        # defining the output layer
+        with tf.name_scope('output_layer'):
+            self.M = tf.Variable(tf.random_uniform([self.hidden_dim, self.num_categories],
+                                                   minval=-0.25,
+                                                   maxval=0.25,
+                                                   dtype=tf.float64,
+                                                   seed=None),
+                                 trainable=True, name='W')
 
-        self.b = tf.Variable(tf.zeros([1], dtype=tf.float64), trainable=True, name='output_bias')
+            self.b = tf.Variable(tf.zeros([1], dtype=tf.float64), trainable=True, name='b')
 
-        self.batch_prediction = tf.matmul(self.final_encoder, self.M) + self.b
+            self.batch_prediction = tf.matmul(self.final_encoder, self.M) + self.b
 
-        # defining the loss function
         with tf.name_scope('loss'):
+            #  batch loss
             self.batch_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.batch_prediction, labels=self.labels)
             self.loss = tf.reduce_mean(self.batch_loss)
+
+            # batch accuracy
+            self.accuracy = tf.reduce_sum(tf.cast(tf.equal(tf.argmax(self.batch_prediction, 1),
+                                          tf.argmax(self.labels, 1)), tf.float64))/self.batch_size
 
     def _create_optimizer(self):
         """
@@ -151,6 +159,7 @@ class AudioModel:
 
         with tf.name_scope('summary'):
             tf.summary.scalar('mean_loss', self.loss)
+            tf.summary.scalar('mean_accuracy', self.accuracy)
             self.summary_op = tf.summary.merge_all()
 
     def build_graph(self):
