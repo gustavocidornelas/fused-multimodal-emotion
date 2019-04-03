@@ -14,7 +14,7 @@ class ProcessDataAudio:
 
     Attributes
     ----------
-    audio_data (array): array of shape [num_samples, 25.000]. Each row corresponds to a raw audio file
+    audio_data (array): array of shape [num_samples, 250.000]. Each row corresponds to a raw audio file
     labels (array): array of shape [num_samples] corresponding to the categories
     """
     def __init__(self, data_path):
@@ -31,7 +31,7 @@ class ProcessDataAudio:
 
         Returns
         ----------
-        audio_data (array): array of shape [num_samples, 25.000]. Each row corresponds to a raw audio file
+        audio_data (array): array of shape [num_samples, 250.000]. Each row corresponds to a raw audio file
         """
         print('Loading the audio data...')
         audio_file = self.data_path + 'FC_raw_audio.npy'
@@ -131,7 +131,7 @@ class ProcessDataAudio:
         # starting the tensorflow data pipeline
         dataset = tf.data.Dataset.from_tensor_slices((audio_data, labels))
 
-        # repeating for num_epochs
+        # number of times for the dataset iterated num_epochs times
         dataset = dataset.repeat(num_epochs)
 
         # creating batches
