@@ -28,7 +28,7 @@ num_epochs = 5
 # number of filters in each convolutional layer
 num_filters = [4, 8]
 filter_lengths = [25, 5]
-n_pool = [50, 10]
+n_pool = [50, 100]
 encoder_size = 250
 hidden_dim = 200
 num_layers = 1
