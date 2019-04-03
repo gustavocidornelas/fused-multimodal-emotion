@@ -39,7 +39,7 @@ class ProcessDataAudio:
         # reading the audio file
         audio_data = np.load(audio_file)
 
-        return audio_data[:128, :]
+        return audio_data
 
     def _load_labels(self):
         """
@@ -56,7 +56,7 @@ class ProcessDataAudio:
         # reading the labels file
         labels = np.genfromtxt(labels_file, delimiter=',')
 
-        return labels[:128]
+        return labels
 
     def split_train_test(self, alpha):
         """
