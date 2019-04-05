@@ -24,8 +24,8 @@ if __name__ == '__main__':
 
     with tf.name_scope('dataset'):
         # creating the data placeholders
-        audio_placeholder = tf.placeholder(tf.float64, shape=[None, 250000])
-        label_placeholder = tf.placeholder(tf.float64, shape=[None, 4])
+        audio_placeholder = tf.placeholder(tf.float64, shape=[None, audio_input_len])
+        label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories])
 
         # creating dataset over the placeholders
         dataset = tf.data.Dataset.from_tensor_slices((audio_placeholder, label_placeholder))
@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     # creating the model
     model = AudioModel(audio_input, label_batch, batch_size, num_categories, learning_rate, num_filters, filter_lengths,
-                       audio_input_len, n_pool, encoder_size, hidden_dim, num_layers)
+                       audio_input_len, n_pool, hidden_dim, num_layers, dr_prob)
     model.build_graph()
 
     # training the model
