@@ -27,10 +27,14 @@ num_epochs = 5
 ##################################
 # number of filters in each convolutional layer
 num_filters = [4, 8]
+# kernel size for each convolutional layer
 filter_lengths = [25, 5]
+# pooling size (kernel and stride) for each convolutional layer
 n_pool = [50, 100]
-encoder_size = 250
+# number of neurons in each layer at the RNN
 hidden_dim = 200
+# number of layers in a RNN cell
 num_layers = 1
+# dropout probability (for the RNN)
 dr_prob = 0.55
 
