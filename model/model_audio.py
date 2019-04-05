@@ -6,13 +6,14 @@ Created on Mon March 25, 2019
 import tensorflow as tf
 import numpy as np
 
+
 class AudioModel:
     """
     Class that creates the audio model (CNN + GRU) graph
 
     """
     def __init__(self, audio_input, label_batch, batch_size, num_categories, learning_rate, num_filters, filter_lengths,
-                 audio_len, n_pool, encoder_size, hidden_dim, num_layers):
+                 audio_len, n_pool, hidden_dim, num_layers, dr_prob):
 
         # general
         self.audio_input = tf.reshape(audio_input, shape=[-1, audio_len, 1])
@@ -32,10 +33,9 @@ class AudioModel:
         self.conv_out_length = int(audio_len / (n_pool[0] * n_pool[1]))
 
         # recurrent layers
-        self.encoder_size = encoder_size # may be useless
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.dr_prob = tf.placeholder(tf.float32, name='dropout_prob')
+        self.dr_prob = dr_prob
 
         # output layers
         self.y_labels = []
@@ -63,9 +63,7 @@ class AudioModel:
 
             # max pooling across time
             max_pool2 = tf.layers.max_pooling1d(conv_layer2, pool_size=self.n_pool[1], strides=self.n_pool[1])
-
-            # max pooling across channels
-            self.output_cnn = tf.reduce_max(max_pool2, reduction_indices=[2], keepdims=True)
+            self.output_cnn = max_pool2
 
     def gru_cell(self):
         """
@@ -87,8 +85,8 @@ class AudioModel:
         (DropoutWrapper object): instance of a GRU cell with the specified dropout probability
         """
         # specified dropout between the layers
-        return tf.contrib.rnn.DropoutWrapper(self.gru_cell(), input_keep_prob=0.5,
-                                             output_keep_prob=0.5)
+        return tf.contrib.rnn.DropoutWrapper(self.gru_cell(), input_keep_prob=self.dr_prob,
+                                             output_keep_prob=self.dr_prob)
 
     def _create_recursive_net(self):
         """
@@ -98,8 +96,10 @@ class AudioModel:
 
         with tf.name_scope('RNN'):
             # first, we split the output of the CNN to be fed as a sequence to the RNN
-            # TODO: fix this to work with the full tensor
-            rnn_input = tf.split(self.output_cnn[:, :, 0], self.conv_out_length, axis=1)
+            rnn_input = tf.split(self.output_cnn, self.conv_out_length, axis=1)
+
+            # reshaping the elements in rnn_input to be fed to the RNN
+            rnn_input = [input_element[:, 0, :] for input_element in rnn_input]
 
             # creating the list with the specified number of layers of GRU cells with dropout
             cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers)])
@@ -111,7 +111,7 @@ class AudioModel:
 
     def _create_output_layers(self):
         """
-        Creates the output layer, which is a multi-layer perceptron
+        Creates the output layer (fully connected layer)
         """
         print('Creating the output layers...')
 
