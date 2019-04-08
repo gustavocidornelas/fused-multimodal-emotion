@@ -38,8 +38,9 @@ if __name__ == '__main__':
         audio_input, label_batch = iterator.get_next()
 
     # creating the model
-    model = AudioModel(audio_input, label_batch, batch_size, num_categories, learning_rate, num_filters, filter_lengths,
-                       audio_input_len, n_pool, hidden_dim, num_layers, dr_prob)
+    model = AudioModel(audio_input, label_batch, batch_size, num_categories, learning_rate, num_filters_audio,
+                       filter_lengths_audio, audio_input_len, n_pool_audio, hidden_dim_audio, num_layers_audio,
+                       dr_prob_audio)
     model.build_graph()
 
     # training the model

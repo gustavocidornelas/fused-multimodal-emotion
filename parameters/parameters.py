@@ -26,15 +26,15 @@ num_epochs = 5
 # Audio
 ##################################
 # number of filters in each convolutional layer
-num_filters = [4, 8]
+num_filters_audio = [4, 8]
 # kernel size for each convolutional layer
-filter_lengths = [25, 5]
+filter_lengths_audio = [25, 5]
 # pooling size (kernel and stride) for each convolutional layer
-n_pool = [50, 100]
+n_pool_audio = [50, 100]
 # number of neurons in each layer at the RNN
-hidden_dim = 200
+hidden_dim_audio = 200
 # number of layers in a RNN cell
-num_layers = 1
+num_layers_audio = 1
 # dropout probability (for the RNN)
-dr_prob = 0.55
+dr_prob_audio = 0.55
 
