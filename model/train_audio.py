@@ -9,6 +9,7 @@ import tensorflow as tf
 from parameters.parameters import *
 from model.process_data_audio import *
 from model.model_audio import *
+from model.evaluate_audio import *
 
 
 if __name__ == '__main__':
@@ -22,20 +23,17 @@ if __name__ == '__main__':
     train_labels = data_handler.label_one_hot(label=train_labels, num_categories=num_categories)
     test_labels = data_handler.label_one_hot(label=test_labels, num_categories=num_categories)
 
-    with tf.name_scope('dataset'):
-        # creating the data placeholders
-        audio_placeholder = tf.placeholder(tf.float64, shape=[None, audio_input_len])
-        label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories])
+    # placeholders
+    audio_placeholder = tf.placeholder(tf.float64, shape=[None, 250000])
+    label_placeholder = tf.placeholder(tf.float64, shape=[None, 4])
 
-        # creating dataset over the placeholders
-        dataset = tf.data.Dataset.from_tensor_slices((audio_placeholder, label_placeholder))
-        dataset = dataset.repeat(num_epochs)
-        dataset = dataset.batch(batch_size)
-
-        # creating iterator
-        iterator = dataset.make_initializable_iterator()
-
-        audio_input, label_batch = iterator.get_next()
+    # creating training and validation datasets
+    train_iterator, val_iterator, audio_input, label_batch, handle = data_handler.create_datasets(audio_placeholder,
+                                                                                                  label_placeholder,
+                                                                                                  test_audio_data,
+                                                                                                  test_labels,
+                                                                                                  batch_size,
+                                                                                                  num_epochs)
 
     # creating the model
     model = AudioModel(audio_input, label_batch, batch_size, num_categories, learning_rate, num_filters_audio,
@@ -43,34 +41,65 @@ if __name__ == '__main__':
                        dr_prob_audio)
     model.build_graph()
 
+    # evaluation object
+    evaluator = EvaluateAudio()
+
     # training the model
     with tf.Session() as sess:
         # initializing the global variables
         sess.run(tf.global_variables_initializer())
 
-        # writing the graph
-        writer = tf.summary.FileWriter('../graphs', sess.graph)
+        # writing the graphs
+        writer_train = tf.summary.FileWriter('../graphs/graph_train', sess.graph)
+        writer_val = tf.summary.FileWriter('../graphs/graph_val', sess.graph)
 
         # training loop
         print("Training...")
 
         # initializing iterator with training data
-        sess.run(iterator.initializer, feed_dict={audio_placeholder: train_audio_data, label_placeholder: train_labels})
+        sess.run(train_iterator.initializer, feed_dict={audio_placeholder: train_audio_data, label_placeholder:
+                 train_labels})
 
-        count = 1
+        # creating training and validation handles (to switch between datasets)
+        train_handle = sess.run(train_iterator.string_handle())
+        val_handle = sess.run(val_iterator.string_handle())
+
+        batch_count = 1
+
+        # keeping track of the best test and validation accuracies
+        best_train_accuracy = 0
+        best_val_accuracy = 0
 
         # feeding the batches to the model
         while True:
             try:
-                _, accuracy, loss, summary = sess.run([model.optimizer, model.accuracy, model.loss, model.summary_op])
-                writer.add_summary(summary, global_step=model.global_step.eval())
+                _, accuracy, loss, summary = sess.run([model.optimizer, model.accuracy, model.loss, model.summary_op],
+                                                      feed_dict={handle: train_handle})
+                writer_train.add_summary(summary, global_step=model.global_step.eval())
 
-                print('Batch: ' + str(count) + ' Loss: {:.4f}'.format(loss) +
+                print('Batch: ' + str(batch_count) + ' Loss: {:.4f}'.format(loss) +
                       ' Training accuracy: {:.4f}'.format(accuracy))
-                count += 1
+
+                # saving the best training accuracy so far
+                if accuracy > best_train_accuracy:
+                    best_train_accuracy = accuracy
+
+                batch_count += 1
+
+                # evaluating on the validation set every 50 batches
+                if batch_count % 50 == 0:
+                    # calculating the accuracy on the validation set
+                    val_accuracy = evaluator.evaluate_audio_model(sess, model, val_iterator, handle, val_handle,
+                                                                  writer_val)
+
+                    # saving the best training accuracy so far
+                    if val_accuracy > best_val_accuracy:
+                        best_val_accuracy = val_accuracy
 
             except tf.errors.OutOfRangeError:
                 print('End of dataset')
+                print('Best training accuracy: {:.4f}'.format(best_train_accuracy))
+                print('Best validation accuracy: {:.4f}'.format(best_val_accuracy))
                 break
 
 
