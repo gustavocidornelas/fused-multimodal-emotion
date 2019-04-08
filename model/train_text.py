@@ -58,6 +58,10 @@ if __name__ == '__main__':
 
         batch_count = 1
 
+        # keeping track of the best test and validation accuracies
+        best_train_accuracy = 0
+        best_val_accuracy = 0
+
         # feeding the batches to the model
         while True:
             try:
@@ -67,14 +71,27 @@ if __name__ == '__main__':
 
                 print('Batch: ' + str(batch_count) + ' Loss: {:.4f}'.format(loss) +
                       ' Training accuracy: {:.4f}'.format(accuracy))
+
+                # saving the best training accuracy so far
+                if accuracy > best_train_accuracy:
+                    best_train_accuracy = accuracy
+
                 batch_count += 1
 
                 # evaluating on the validation set every 50 batches
                 if batch_count % 50 == 0:
-                    evaluator.evaluate_text_model(sess, model, val_iterator, handle, val_handle, writer_val)
+                    # calculating the accuracy on the validation set
+                    val_accuracy = evaluator.evaluate_text_model(sess, model, val_iterator, handle, val_handle,
+                                                                 writer_val)
+
+                    # saving the best training accuracy so far
+                    if val_accuracy > best_val_accuracy:
+                        best_val_accuracy = val_accuracy
 
             except tf.errors.OutOfRangeError:
                 print('End of dataset')
+                print('Best training accuracy: {:.4f}'.format(best_train_accuracy))
+                print('Best validation accuracy: {:.4f}'.format(best_val_accuracy))
                 break
 
 
