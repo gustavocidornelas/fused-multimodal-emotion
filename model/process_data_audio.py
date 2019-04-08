@@ -116,39 +116,54 @@ class ProcessDataAudio:
 
         return one_hot_label
 
-    def get_batches(self, audio_data, labels, batch_size, num_epochs):
+    def create_datasets(self, audio_placeholder, label_placeholder, val_audio_data, val_labels, batch_size, num_epochs):
         """
-        Creates the dataset and iterator objects using the tensorflow data pipeline. Easily repeats the dataset for the
-        number of epochs and separates the batches
+        Creates the training and validation datasets and returns the iterators, next elements of the dataset and the
+        handle
+
+        Parameters
+        ----------
+        train_audio_data (array): array of shape [num_train_samples, 250.000] with training samples as rows
+        train_labels (array): array of shape [num_train_samples, num_categories] labels for training
+        val_audio_data (array): array of shape [num_val_samples, 250.000] with validation samples as rows
+        val_labels (array): array of shape [num_val_samples, num_categories] labels for validation
+        batch_size (int): batch size
+        num_epochs (int): number of epochs
 
         Returns
         ----------
-        dataset (Dataset object): represents the data as tensors
-        iterator (Iterator object): iterates over the dataset
+        train_iterator (Iterator object): iterator for the training dataset
+        val_iterator (Iterator object): iterator for the validation dataset
+        audio_input (tensor): tensor with the text inputs to be fed to the model
+        label_batch (tensor): tensor with the labels to be fed to the model
+        handle (string): handle string, to switch between the datasets
         """
-        print('Creating the batches...')
+        with tf.name_scope('dataset'):
 
-        # starting the tensorflow data pipeline
-        dataset = tf.data.Dataset.from_tensor_slices((audio_data, labels))
+            # creating the training dataset
+            train_dataset = tf.data.Dataset.from_tensor_slices((audio_placeholder, label_placeholder))
+            train_dataset = train_dataset.repeat(num_epochs)
+            train_dataset = train_dataset.batch(batch_size)
 
-        # number of times for the dataset iterated num_epochs times
-        dataset = dataset.repeat(num_epochs)
+            # creating the validation dataset
+            val_dataset = tf.data.Dataset.from_tensor_slices((val_audio_data, val_labels))
+            val_dataset = val_dataset.batch(val_audio_data.shape[0])
 
-        # creating batches
-        dataset = dataset.batch(batch_size)
+            # creating the iterators from the datasets
+            train_iterator = train_dataset.make_initializable_iterator()
+            val_iterator = val_dataset.make_initializable_iterator()
 
-        # creating the iterator
-        iterator = dataset.make_one_shot_iterator()
+            # creating the handle
+            handle = tf.placeholder(tf.string, shape=[])
 
-        return dataset, iterator
+            # creating iterator
+            iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types,
+                                                           train_dataset.output_shapes)
 
+            # getting the next element
+            audio_input, label_batch = iterator.get_next()
 
-if __name__ == '__main__':
-
-    path = '../data/processed-data/'
-    data = ProcessDataAudio(path)
-
-    data.split_train_test(alpha=0.9)
+        return train_iterator, val_iterator, audio_input, label_batch, handle
 
 
 
