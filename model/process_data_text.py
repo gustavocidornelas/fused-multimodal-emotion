@@ -109,6 +109,11 @@ class ProcessDataText:
         """
         Converts the labels to the format one-hot, which is expected by our model
 
+        Parameters
+        ----------
+        label (array): array of integers that specify the category
+        num_categories (int): integer that specifies the number of categories
+
         Returns
         ----------
         one_hot_label (array): array of shape [len(label), num_categories] with a 1 in the corresponding category
@@ -129,11 +134,54 @@ class ProcessDataText:
 
         Returns
         ----------
-        glove_embedding (array): array of shape [dict_size, 300] with the word embeddings for each word on the dict
+        (array): array of shape [dict_size, 300] with the word embeddings for each word on the dict
         """
-        glove_embedding = np.load(self.data_path + 'W_embedding.npy')
+        return np.load(self.data_path + 'W_embedding.npy')
 
-        return glove_embedding
+    def create_datasets(self, train_text_data, train_labels, val_text_data, val_labels, batch_size, num_epochs):
+        """
+        Creates the training and validation datasets and returns the iterators, next elements of the dataset and the
+        handle
 
+        Parameters
+        ----------
+        train_text_data (array): array of shape [num_train_samples, 128] with training samples as rows
+        train_labels (array): array of shape [num_train_samples, num_categories] labels for training
+        val_text_data (array): array of shape [num_val_samples, 128] with validation samples as rows
+        val_labels (array): array of shape [num_val_samples, num_categories] labels for validation
+        batch_size (int): batch size
+        num_epochs (int): number of epochs
 
+        Returns
+        ----------
+        train_iterator (Iterator object): iterator for the training dataset
+        val_iterator (Iterator object): iterator for the validation dataset
+        text_input (tensor): tensor with the text inputs to be fed to the model
+        label_batch (tensor): tensor with the labels to be fed to the model
+        handle (string): handle string, to switch between the datasets
+        """
+        with tf.name_scope('dataset'):
+            # creating the training dataset
+            train_dataset = tf.data.Dataset.from_tensor_slices((train_text_data, train_labels))
+            train_dataset = train_dataset.repeat(num_epochs)
+            train_dataset = train_dataset.batch(batch_size)
+
+            # creating the validation dataset
+            val_dataset = tf.data.Dataset.from_tensor_slices((val_text_data, val_labels))
+            val_dataset = val_dataset.batch(val_text_data.shape[0])
+
+            # creating the iterators from the datasets
+            train_iterator = train_dataset.make_one_shot_iterator()
+            val_iterator = val_dataset.make_initializable_iterator()
+
+            # creating the handle
+            handle = tf.placeholder(tf.string, shape=[])
+
+            # creating iterator
+            iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types, train_dataset.output_shapes)
+
+            # getting the next element
+            text_input, label_batch = iterator.get_next()
+
+        return train_iterator, val_iterator, text_input, label_batch, handle
 
