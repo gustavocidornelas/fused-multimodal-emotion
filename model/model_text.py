@@ -137,8 +137,8 @@ class TextModel:
             self.loss = tf.reduce_mean(self.batch_loss)
 
             # batch accuracy
-            self.accuracy = tf.reduce_sum(tf.cast(tf.equal(tf.argmax(self.batch_prediction, 1),
-                                          tf.argmax(self.labels, 1)), tf.float64))/self.batch_size
+            self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.batch_prediction, 1),
+                                           tf.argmax(self.labels, 1)), tf.float64))
 
     def _create_optimizer(self):
         """
@@ -156,7 +156,7 @@ class TextModel:
 
     def _create_summary(self):
         """
-        Creating the TensorBoard summary. Displays the mean loss
+        Creating the TensorBoard summary. Displays the mean training loss and mean training accuracy
         """
         print('Creating summary...')
 
