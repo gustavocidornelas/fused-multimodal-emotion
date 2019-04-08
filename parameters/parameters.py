@@ -38,3 +38,12 @@ num_layers_audio = 1
 # dropout probability (for the RNN)
 dr_prob_audio = 0.55
 
+##################################
+# Text
+################################
+# number of neurons in each layer at the RNN
+hidden_dim_text = 200
+# number of layers in a RNN cell
+num_layers_text = 1
+# dropout probability (for the RNN)
+dr_prob_text = 0.55
