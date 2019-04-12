@@ -65,18 +65,21 @@ class ProcessDataText:
 
         return labels
 
-    def split_train_test(self, alpha):
+    def split_train_test(self, prop_train, prop_test):
         """
         Splits the data into training and testing sets in the proportion defined by alpha
 
         Parameters
         ----------
-        alpha (float): number between 0 and 1 that determines the proportion of the data that will be used for training
+        prop_train (float): number between 0 and 1 that determines the proportion of the data that will be used for
+                            training
+        prop_test (float): number between 0 and 1 that determines the proportion of the data that will be used for
+                            testing
 
         Returns
         ----------
-        train_text_data, test_text_data (array): arrays that correspond to the transcriptions
-        train_labels, test_labels (array): arrays with the labels in the same order as the text_data
+        train_text_data, test_text_data, val_text_data (array): arrays that correspond to the transcriptions
+        train_labels, test_labels, val_labels (array): arrays with the labels in the same order as the text_data
         """
         print('Splitting the data ...')
 
@@ -86,24 +89,31 @@ class ProcessDataText:
         # total number of samples in the dataset
         num_samples = len(self.labels)
 
-        if alpha < 0 or alpha > 1:
-            raise ValueError('alpha equals ' + str(alpha) + ' is out of range. It must be between 0 and 1')
+        if prop_train < 0 or prop_train > 1 or prop_test < 0 or prop_test > 1:
+            raise ValueError('Inserted proportion for either training or testing is out of range. It must be between 0 '
+                             'and 1')
 
-        num_train = np.ceil(alpha * num_samples)
+        # number of elements in each set
+        num_train = int(prop_train * num_samples)
+        num_test = int(prop_test * num_samples)
 
-        # generating a list with the indexes that correspond to the training data
-        training_indexes = random.sample(range(num_samples), int(num_train))
-        test_indexes = [i for i in range(num_samples) if i not in training_indexes]
+        # concatenating data and labels to shuffle
+        data = np.concatenate((self.text_data, self.labels.reshape(num_samples, 1)), axis=1)
 
-        # splitting into training data
-        train_text_data = self.text_data[training_indexes, :]
-        train_labels = self.labels[training_indexes]
+        # shuffling the data
+        np.random.shuffle(data)
 
-        # splitting into test data
-        test_text_data = self.text_data[test_indexes, :]
-        test_labels = self.labels[test_indexes]
+        data = data.astype(int)
 
-        return train_text_data, train_labels, test_text_data, test_labels
+        # splitting the data
+        train_text_data = data[:num_train + 1, :-1]
+        train_labels = data[:num_train + 1, -1]
+        test_text_data = data[num_train + 1: num_train + 1 + num_test + 1, :-1]
+        test_labels = data[num_train + 1: num_train + 1 + num_test + 1, -1]
+        val_text_data = data[num_train + 1 + num_test + 1:, :-1]
+        val_labels = data[num_train + 1 + num_test + 1:, -1]
+
+        return train_text_data, train_labels, test_text_data, test_labels, val_text_data, val_labels
 
     def label_one_hot(self, label, num_categories):
         """
@@ -138,7 +148,8 @@ class ProcessDataText:
         """
         return np.load(self.data_path + 'W_embedding.npy')
 
-    def create_datasets(self, train_text_data, train_labels, val_text_data, val_labels, batch_size, num_epochs):
+    def create_datasets(self, train_text_data, train_labels, test_text_data, test_labels, val_text_data, val_labels,
+                        batch_size, num_epochs):
         """
         Creates the training and validation datasets and returns the iterators, next elements of the dataset and the
         handle
@@ -147,14 +158,17 @@ class ProcessDataText:
         ----------
         train_text_data (array): array of shape [num_train_samples, 128] with training samples as rows
         train_labels (array): array of shape [num_train_samples, num_categories] labels for training
+        test_text_data (array): array of shape [num_test_samples, 128] with testing samples as rows
+        test_labels (array): array of shape [num_test_samples, num_categories] labels for testing
         val_text_data (array): array of shape [num_val_samples, 128] with validation samples as rows
         val_labels (array): array of shape [num_val_samples, num_categories] labels for validation
-        batch_size (int): batch size
+        batch_size (int): batch size for the training set
         num_epochs (int): number of epochs
 
         Returns
         ----------
         train_iterator (Iterator object): iterator for the training dataset
+        test_iterator (Iterator object): iterator for the test dataset
         val_iterator (Iterator object): iterator for the validation dataset
         text_input (tensor): tensor with the text inputs to be fed to the model
         label_batch (tensor): tensor with the labels to be fed to the model
@@ -166,22 +180,27 @@ class ProcessDataText:
             train_dataset = train_dataset.repeat(num_epochs)
             train_dataset = train_dataset.batch(batch_size)
 
+            # creating the test dataset
+            test_dataset = tf.data.Dataset.from_tensor_slices((test_text_data, test_labels))
+            test_dataset = test_dataset.batch(test_text_data.shape[0])
+
             # creating the validation dataset
             val_dataset = tf.data.Dataset.from_tensor_slices((val_text_data, val_labels))
             val_dataset = val_dataset.batch(val_text_data.shape[0])
 
             # creating the iterators from the datasets
             train_iterator = train_dataset.make_one_shot_iterator()
+            test_iterator = test_dataset.make_initializable_iterator()
             val_iterator = val_dataset.make_initializable_iterator()
 
             # creating the handle
             handle = tf.placeholder(tf.string, shape=[])
 
             # creating iterator
-            iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types, train_dataset.output_shapes)
+            iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types,
+                                                           train_dataset.output_shapes)
 
             # getting the next element
             text_input, label_batch = iterator.get_next()
 
-        return train_iterator, val_iterator, text_input, label_batch, handle
-
+        return train_iterator, test_iterator, val_iterator, text_input, label_batch, handle

@@ -16,24 +16,23 @@ if __name__ == '__main__':
 
     # splitting the data in training and test sets and preparing it to be fed to the model
     data_handler = ProcessDataAudio(data_path)
-    train_audio_data, train_labels, test_audio_data, test_labels = data_handler.split_train_test(alpha=0.9)
+    train_audio_data, train_labels, test_audio_data, test_labels, val_audio_data, val_labels = \
+        data_handler.split_train_test(prop_train=0.8, prop_test=0.05)
     audio_input_len = train_audio_data.shape[1]
 
     # converting the labels to the one-hot format
     train_labels = data_handler.label_one_hot(label=train_labels, num_categories=num_categories)
     test_labels = data_handler.label_one_hot(label=test_labels, num_categories=num_categories)
+    val_labels = data_handler.label_one_hot(label=val_labels, num_categories=num_categories)
 
     # placeholders
-    audio_placeholder = tf.placeholder(tf.float64, shape=[None, 250000])
-    label_placeholder = tf.placeholder(tf.float64, shape=[None, 4])
+    audio_placeholder = tf.placeholder(tf.float64, shape=[None, audio_input_len])
+    label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories])
 
     # creating training and validation datasets
-    train_iterator, val_iterator, audio_input, label_batch, handle = data_handler.create_datasets(audio_placeholder,
-                                                                                                  label_placeholder,
-                                                                                                  test_audio_data,
-                                                                                                  test_labels,
-                                                                                                  batch_size,
-                                                                                                  num_epochs)
+    train_iterator, test_iterator, val_iterator, audio_input, label_batch, handle = data_handler.create_datasets(
+        audio_placeholder, label_placeholder, test_audio_data, test_labels, val_audio_data, val_labels, batch_size,
+        num_epochs)
 
     # creating the model
     model = AudioModel(audio_input, label_batch, batch_size, num_categories, learning_rate, num_filters_audio,
@@ -62,6 +61,7 @@ if __name__ == '__main__':
 
         # creating training and validation handles (to switch between datasets)
         train_handle = sess.run(train_iterator.string_handle())
+        test_handle = sess.run(test_iterator.string_handle())
         val_handle = sess.run(val_iterator.string_handle())
 
         batch_count = 1
@@ -89,8 +89,8 @@ if __name__ == '__main__':
                 # evaluating on the validation set every 50 batches
                 if batch_count % 50 == 0:
                     # calculating the accuracy on the validation set
-                    val_accuracy = evaluator.evaluate_audio_model(sess, model, val_iterator, handle, val_handle,
-                                                                  writer_val)
+                    val_accuracy = evaluator.evaluate_audio_model_val(sess, model, val_iterator, handle, val_handle,
+                                                                      writer_val)
 
                     # saving the best training accuracy so far
                     if val_accuracy > best_val_accuracy:
@@ -100,6 +100,10 @@ if __name__ == '__main__':
                 print('End of dataset')
                 print('Best training accuracy: {:.4f}'.format(best_train_accuracy))
                 print('Best validation accuracy: {:.4f}'.format(best_val_accuracy))
+
+                # evaluating on the test set
+                test_accuracy = evaluator.evaluate_audio_model_test(sess, model, test_iterator, handle, test_handle)
+
                 break
 
 
