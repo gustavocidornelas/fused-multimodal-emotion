@@ -4,6 +4,11 @@ Created on Mon April 8, 2019
 @author: Gustavo Cid Ornelas
 """
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import confusion_matrix
+
 
 class EvaluateAudio:
     """
@@ -65,12 +70,58 @@ class EvaluateAudio:
         sess.run(test_iterator.initializer)
 
         # evaluating the model on the test dataset
-        _, test_accuracy, test_loss = sess.run([model.optimizer, model.accuracy, model.loss],
-                                               feed_dict={handle: test_handle})
+        _, test_accuracy, test_loss, true_label, prediction = sess.run([model.optimizer, model.accuracy, model.loss,
+                                                                        model.labels, model.batch_prediction],
+                                                                        feed_dict={handle: test_handle})
 
         print('Test accuracy: {:.4f}'.format(test_accuracy))
 
+        # creating the confusion matrix
+        self._build_confusion_matrix(true_label, prediction)
+
         return test_accuracy
 
+    def _build_confusion_matrix(self, true_label, prediction):
+        """
+        Creates and displays the confusion matrix for the test set
+
+        Parameters
+        ----------
+        true_label (array): true labels for the test set
+        prediction (array): model's predictions for the test set
+        """
+        print('Creating the confusion matrix for the test set...')
+        # retrieving the predictions (not in the one-hot format)
+        true_label = np.argmax(true_label, axis=1)
+        prediction = np.argmax(prediction, axis=1)
+
+        # creating the confusion matrix
+        cm = confusion_matrix(true_label, prediction)
+        # normalizing
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+        # plotting the confusion matrix
+        fig, ax = plt.subplots()
+        im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+        ax.figure.colorbar(im, ax=ax)
+        ax.set(xticks=np.arange(cm.shape[1]),
+               yticks=np.arange(cm.shape[0]),
+               xticklabels=['Angry', 'Happy', 'Sad', 'Neutral'], yticklabels=['Angry', 'Happy', 'Sad', 'Neutral'],
+               ylabel='True label',
+               xlabel='Predicted label')
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+                 rotation_mode="anchor")
+
+        # writing the values in the matrix figure
+        fmt = '.2f'
+        thresh = cm.max() / 2.
+        for i in range(cm.shape[0]):
+            for j in range(cm.shape[1]):
+                ax.text(j, i, format(cm[i, j], fmt),
+                        ha="center", va="center",
+                        color="white" if cm[i, j] > thresh else "black")
+        fig.tight_layout()
+
+        plt.show()
 
 
