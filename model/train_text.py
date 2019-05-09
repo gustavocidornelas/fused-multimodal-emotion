@@ -100,9 +100,9 @@ if __name__ == '__main__':
 
                 break
 
-            # saving the final text model
-            saver = tf.train.Saver()
-            saver.save(sess, 'pt_text_model')
+        # saving the final text model
+        saver = tf.train.Saver()
+        saver.save(sess, 'pt_text_model')
 
 
 

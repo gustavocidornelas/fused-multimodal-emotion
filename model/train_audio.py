@@ -107,8 +107,8 @@ if __name__ == '__main__':
 
                 break
 
-            # saving the trained audio model
-            print('Saving the trained model...')
-            saver = tf.train.Saver()
-            saver.save(sess, 'pt_audio_model')
+        # saving the trained audio model
+        print('Saving the trained model...')
+        saver = tf.train.Saver()
+        saver.save(sess, 'pt_audio_model')
 
