@@ -170,7 +170,7 @@ class ProcessDataAudio:
             val_iterator = val_dataset.make_initializable_iterator()
 
             # creating the handle
-            handle = tf.placeholder(tf.string, shape=[])
+            handle = tf.placeholder(tf.string, shape=[], name='handle')
 
             # creating iterator
             iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types,
