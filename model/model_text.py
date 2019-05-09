@@ -129,16 +129,16 @@ class TextModel:
 
             self.b = tf.Variable(tf.zeros([1], dtype=tf.float64), trainable=True, name='b')
 
-            self.batch_prediction = tf.matmul(self.final_encoder, self.M) + self.b
+            self.batch_prediction = tf.add(tf.matmul(self.final_encoder, self.M), self.b, name='batch_prediction')
 
         with tf.name_scope('loss'):
             #  batch loss
             self.batch_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.batch_prediction, labels=self.labels)
-            self.loss = tf.reduce_mean(self.batch_loss)
+            self.loss = tf.reduce_mean(self.batch_loss, name='mean_batch_loss')
 
             # batch accuracy
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.batch_prediction, 1),
-                                           tf.argmax(self.labels, 1)), tf.float64))
+                                           tf.argmax(self.labels, 1)), tf.float64), name='mean_batch_accuracy')
 
     def _create_optimizer(self):
         """

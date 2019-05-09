@@ -5,6 +5,7 @@ Created on Mon March 25, 2019
 """
 
 import tensorflow as tf
+import os
 
 from parameters.parameters import *
 from model.process_data_audio import *
@@ -26,8 +27,8 @@ if __name__ == '__main__':
     val_labels = data_handler.label_one_hot(label=val_labels, num_categories=num_categories)
 
     # placeholders
-    audio_placeholder = tf.placeholder(tf.float64, shape=[None, audio_input_len])
-    label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories])
+    audio_placeholder = tf.placeholder(tf.float64, shape=[None, audio_input_len], name='audio_input_placeholder')
+    label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories], name='labels_placeholder')
 
     # creating training and validation datasets
     train_iterator, test_iterator, val_iterator, audio_input, label_batch, handle = data_handler.create_datasets(
@@ -106,4 +107,8 @@ if __name__ == '__main__':
 
                 break
 
+            # saving the trained audio model
+            print('Saving the trained model...')
+            saver = tf.train.Saver()
+            saver.save(sess, 'pt_audio_model')
 
