@@ -109,6 +109,10 @@ class AudioModel:
 
             self.final_encoder = last_states_enc[-1]
 
+            # adding hidden states to collection to be restored later
+            hidden_states = tf.stack(self.outputs_enc, axis=2)
+            tf.add_to_collection('hidden_states', hidden_states)
+
     def _create_output_layers(self):
         """
         Creates the output layer (fully connected layer)
