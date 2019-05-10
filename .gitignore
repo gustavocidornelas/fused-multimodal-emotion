@@ -2,9 +2,14 @@
 /data/processed-data
 /data/raw-data
 
+# outputs
 /output
 
+# graphs (for TensorBoard)
 /graphs
+
+# pre-trained models
+/pretrained-models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
