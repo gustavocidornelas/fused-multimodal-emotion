@@ -110,5 +110,5 @@ if __name__ == '__main__':
         # saving the trained audio model
         print('Saving the trained model...')
         saver = tf.train.Saver()
-        saver.save(sess, 'pt_audio_model')
+        saver.save(sess, '../pretrained-models/pt_audio_model')
 
