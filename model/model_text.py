@@ -110,6 +110,10 @@ class TextModel:
             self.outputs_enc, last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input,
                                                                  dtype=tf.float64)
 
+            # adding hidden states to collection to be restored later
+            hidden_states = tf.stack(self.outputs_enc, axis=2)
+            tf.add_to_collection('hidden_states', hidden_states)
+
             self.final_encoder = last_states_enc[-1]
 
     def _create_output_layers(self):
