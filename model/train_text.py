@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
         # saving the final text model
         saver = tf.train.Saver()
-        saver.save(sess, 'pt_text_model')
+        saver.save(sess, '../pretrained-models/pt_text_model')
 
 
 
