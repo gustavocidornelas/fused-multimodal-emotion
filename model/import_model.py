@@ -47,7 +47,10 @@ class ImportAudioModel:
             #self.val_audio_handle = self.sess.run(val_audio_iterator.string_handle())
 
     def _create_audio_datasets(self):
-
+        """
+        Creates the training, testing and validation datasets for the audio. These are the datasets that contain the
+        data used by the pre-trained model
+        """
         # recovering the placeholders
         self.audio_input_placeholder = self.graph.get_tensor_by_name('audio_input_placeholder:0')
         self.labels_placeholder = self.graph.get_tensor_by_name('labels_placeholder:0')
@@ -60,7 +63,14 @@ class ImportAudioModel:
         self.train_audio_iterator = self.train_audio_dataset.make_initializable_iterator()
 
     def run_audio_model_train(self):
+        """
+        Runs a batch of the audio data through the audio model
 
+        Returns
+        ----------
+        batch_hidden_states (array): array of shape [batch_size, hidden_dim, audio_rnn_steps] with the hidden states at
+                                     every time step of the audio RNN
+        """
         print('Feeding batch to audio model...')
         batch_prediction, batch_hidden_states = self.sess.run([self.predictions, self.hidden_states],
                                                               feed_dict={self.handle: self.train_audio_handle})

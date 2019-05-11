@@ -89,12 +89,3 @@ class ProcessDataMultimodal:
 
         return train_text_data, train_audio_data, train_labels, test_text_data, test_audio_data, test_labels, \
                val_text_data, val_audio_data, val_labels
-
-
-if __name__ == '__main__':
-    handler = ProcessDataMultimodal('../data/processed-data/')
-
-    train_text_data, train_audio_data, train_labels, test_text_data, test_audio_data, test_labels, val_text_data, \
-    val_audio_data, val_labels = handler.split_train_test(prop_train=0.8, prop_test=0.05)
-
-    print(0)

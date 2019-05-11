@@ -36,14 +36,6 @@ if __name__ == '__main__':
         text_data_handler.create_datasets(train_text_data, train_labels, test_text_data, test_labels, val_text_data,
                                      val_labels, batch_size, num_epochs)
 
-    # creating the audio datasets
-    #audio_input_len = train_audio_data.shape[1]
-    #audio_placeholder = tf.placeholder(tf.float64, shape=[None, audio_input_len], name='audio_input_placeholder')
-    #label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories], name='labels_placeholder')
-    #train_audio_iterator, test_audio_iterator, val_audio_iterator, audio_input, audio_label_batch, audio_handle = \
-    #    audio_data_handler.create_datasets(audio_placeholder, label_placeholder, test_audio_data, test_labels,
-    #                                       val_audio_data, val_labels, batch_size, num_epochs)
-
     # creating the text model (model that is going to be trained)
     text_model = TextModel(text_input, text_label_batch, batch_size, num_categories, learning_rate,
                            text_data_handler.dict_size, hidden_dim_text, num_layers_text, dr_prob_text)
