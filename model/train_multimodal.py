@@ -6,13 +6,13 @@ Created on Fri May 10, 2019
 
 import tensorflow as tf
 
-from parameters.parameters import *
-from model.process_data_text import *
-from model.process_data_audio import *
-from model.process_data_multimodal import *
-from model.model_text import *
-from model.import_model import *
-from model.evaluate_text import *
+from parameters import *
+from process_data_text import *
+from process_data_audio import *
+from process_data_multimodal import *
+from model_text import *
+from import_model import *
+from evaluate_text import *
 
 
 if __name__ == '__main__':
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # instantiating all of the data handlers
     text_data_handler = ProcessDataText(data_path)
     audio_data_handler = ProcessDataAudio(data_path)
-    multi_data_handler = ProcessDataMultimodal(data_path)
+    multi_data_handler = ProcessDataMultimodal(data_path, text_data_handler, audio_data_handler)
 
     # splitting the data int training, validation and test sets
     train_text_data, train_audio_data, train_labels, test_text_data, test_audio_data, test_labels, val_text_data, \
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         writer_val = tf.summary.FileWriter('../graphs/graph_val', sess.graph)
 
         # importing the pre-trained audio model
-        audio_model = ImportAudioModel(train_audio_data, train_labels)
+        audio_model = ImportAudioModel(train_audio_data, train_labels, test_audio_data, test_labels, val_audio_data, val_labels)
 
         # training loop
         print("Training...")
@@ -99,12 +99,12 @@ if __name__ == '__main__':
                 # evaluating on the validation set every 50 batches
                 #if batch_count % 50 == 0:
                     # calculating the accuracy on the validation set
-                #    val_accuracy = evaluator.evaluate_text_model_val(sess, text_model, val_text_iterator, text_handle, val_text_handle,
-                 #                                                    writer_val)
+                #    val_accuracy = evaluator.evaluate_text_model_val(sess, text_model, val_text_iterator, text_handle,
+                 #                                                    val_text_handle, writer_val)
 
                     # saving the best training accuracy so far
-                #    if val_accuracy > best_val_accuracy:
-                #        best_val_accuracy = val_accuracy
+                 #   if val_accuracy > best_val_accuracy:
+                 #       best_val_accuracy = val_accuracy
 
             except tf.errors.OutOfRangeError:
                 print('End of training')
@@ -112,7 +112,8 @@ if __name__ == '__main__':
                 print('Best validation accuracy: {:.4f}'.format(best_val_accuracy))
 
                 # evaluating on the test set
-                #test_accuracy = evaluator.evaluate_text_model_test(sess, text_model, test_text_iterator, text_handle, test_text_handle)
+                #test_accuracy = evaluator.evaluate_text_model_test(sess, text_model, test_text_iterator, text_handle,
+                 #                                                  test_text_handle)
 
                 break
 
