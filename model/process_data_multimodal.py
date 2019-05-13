@@ -17,13 +17,9 @@ class ProcessDataMultimodal:
     audio_data (array): array of shape [num_samples, 250.000]. Each row corresponds to a raw audio file
     labels (array): array of shape [num_samples] corresponding to the categories
     """
-    def __init__(self, data_path):
+    def __init__(self, data_path, text_data_handler, audio_data_handler):
 
         # getting the data
-        # TODO: pass data handlers as parameters, this way, don't have to load the data twice
-        text_data_handler = ProcessDataText(data_path)
-        audio_data_handler = ProcessDataAudio(data_path)
-
         self.text_data = text_data_handler.text_data
         self.audio_data = audio_data_handler.audio_data
         self.labels = text_data_handler.labels
