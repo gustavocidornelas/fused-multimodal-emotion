@@ -20,6 +20,7 @@ class ProcessDataMultimodal:
     def __init__(self, data_path):
 
         # getting the data
+        # TODO: pass data handlers as parameters, this way, don't have to load the data twice
         text_data_handler = ProcessDataText(data_path)
         audio_data_handler = ProcessDataAudio(data_path)
 

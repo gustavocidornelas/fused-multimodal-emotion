@@ -38,7 +38,8 @@ if __name__ == '__main__':
 
     # creating the text model (model that is going to be trained)
     text_model = TextModel(text_input, text_label_batch, batch_size, num_categories, learning_rate,
-                           text_data_handler.dict_size, hidden_dim_text, num_layers_text, dr_prob_text)
+                           text_data_handler.dict_size, hidden_dim_text, num_layers_text, dr_prob_text,
+                           multimodal_model_status)
     text_model.build_graph()
 
     # evaluation object
@@ -77,10 +78,13 @@ if __name__ == '__main__':
         while True:
             try:
                 hidden_states = audio_model.run_audio_model_train()
-                #print(hidden_states)
+                initial_hidden_states = hidden_states[:, :, -1]
 
-                _, accuracy, loss, summary = sess.run([text_model.optimizer, text_model.accuracy, text_model.loss, text_model.summary_op],
-                                                      feed_dict={text_handle: train_text_handle})
+                _, accuracy, loss, summary = sess.run([text_model.optimizer, text_model.accuracy, text_model.loss,
+                                                       text_model.summary_op],
+                                                      feed_dict={text_handle: train_text_handle,
+                                                                 text_model.initial_hidden_state: initial_hidden_states})
+
                 writer_train.add_summary(summary, global_step=text_model.global_step.eval())
 
                 print('Batch: ' + str(batch_count) + ' Loss: {:.4f}'.format(loss) +
