@@ -47,3 +47,9 @@ hidden_dim_text = 200
 num_layers_text = 1
 # dropout probability (for the RNN)
 dr_prob_text = 0.55
+
+##################################
+# Multimodal
+################################
+# 'True' if training the multimodal model (use hidden states from the audio model in the text)
+multimodal_model_status = True
