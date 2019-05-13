@@ -13,7 +13,7 @@ class TextModel:
     """
 
     def __init__(self, text_input, label_batch, batch_size, num_categories, learning_rate, dict_size, hidden_dim,
-                 num_layers, dr_prob):
+                 num_layers, dr_prob, multimodal_model_status):
         # general
         self.text_input = text_input
         self.labels = label_batch
@@ -23,6 +23,7 @@ class TextModel:
         self.loss = 0.0
         self.batch_loss = None
         self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
+        self.multimodal_model_status = multimodal_model_status
 
         # embedding layer
         self.dict_size = dict_size
@@ -45,6 +46,8 @@ class TextModel:
         print('Creating placeholders...')
         self.embedding_GloVe = tf.placeholder(tf.float64, shape=[self.dict_size, self.embed_dim],
                                               name='embedding_placeholder')
+        self.initial_hidden_state = tf.placeholder(tf.float64, shape=[None, self.hidden_dim],
+                                                   name='initial_rnn_hidden_state')
 
     def _create_embedding(self):
         """
@@ -104,17 +107,25 @@ class TextModel:
             rnn_input = [input_element[:, 0, :] for input_element in rnn_input]
 
             # creating the list with the specified number of layers of GRU cells with dropout
-            cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers)])
+            cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers)],
+                                                   state_is_tuple=False)
 
-            # simulating the time steps in the RNN (returns output activations and last hidden state)
-            self.outputs_enc, last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input,
-                                                                 dtype=tf.float64)
+            if self.multimodal_model_status:
+                # simulating the time steps in the RNN with initialized hidden state
+                self.outputs_enc, self.last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input,
+                                                                          initial_state=self.initial_hidden_state,
+                                                                          dtype=tf.float64)
+            else:
+                # simulating the time steps in the RNN without hidden state initialization
+                self.outputs_enc, self.last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input,
+                                                                          dtype=tf.float64)
 
             # adding hidden states to collection to be restored later
             hidden_states = tf.stack(self.outputs_enc, axis=2)
             tf.add_to_collection('hidden_states', hidden_states)
 
-            self.final_encoder = last_states_enc[-1]
+            #self.final_encoder = self.last_states_enc[-1]
+            self.final_encoder = self.last_states_enc
 
     def _create_output_layers(self):
         """
