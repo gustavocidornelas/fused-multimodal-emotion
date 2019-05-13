@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     # creating the model
     model = TextModel(text_input, label_batch, batch_size, num_categories, learning_rate, data_handler.dict_size,
-                      hidden_dim_text, num_layers_text, dr_prob_text)
+                      hidden_dim_text, num_layers_text, dr_prob_text, multimodal_model_status)
     model.build_graph()
 
     # evaluation object
