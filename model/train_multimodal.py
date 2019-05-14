@@ -6,13 +6,13 @@ Created on Fri May 10, 2019
 
 import tensorflow as tf
 
-from parameters import *
-from process_data_text import *
-from process_data_audio import *
-from process_data_multimodal import *
-from model_text import *
-from import_model import *
-from evaluate_text import *
+from parameters.parameters import *
+from model.process_data_text import *
+from model.process_data_audio import *
+from model.process_data_multimodal import *
+from model.model_text import *
+from model.import_model import *
+from model.evaluate_text import *
 
 
 if __name__ == '__main__':

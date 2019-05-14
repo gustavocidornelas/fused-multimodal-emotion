@@ -5,7 +5,7 @@ Created on Fri May 10, 2019
 """
 import tensorflow as tf
 
-from parameters import *
+from parameters.parameters import *
 
 
 class ImportAudioModel:
