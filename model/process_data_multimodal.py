@@ -20,9 +20,9 @@ class ProcessDataMultimodal:
     def __init__(self, data_path, text_data_handler, audio_data_handler):
 
         # getting the data
-        self.text_data = text_data_handler.text_data
-        self.audio_data = audio_data_handler.audio_data
-        self.labels = text_data_handler.labels
+        self.text_data = text_data_handler.text_data[:200, :]
+        self.audio_data = audio_data_handler.audio_data[:200, :]
+        self.labels = text_data_handler.labels[:200]
 
     def split_train_test(self, prop_train, prop_test):
         """
@@ -86,3 +86,61 @@ class ProcessDataMultimodal:
 
         return train_text_data, train_audio_data, train_labels, test_text_data, test_audio_data, test_labels, \
                val_text_data, val_audio_data, val_labels
+
+    def create_datasets(self, text_placeholder, audio_placeholder, label_placeholder, test_text_data, test_audio_data, test_labels, val_text_data, val_audio_data,
+                        val_labels, batch_size, num_epochs):
+        """
+        Creates the training and validation datasets and returns the iterators, next elements of the dataset and the
+        handle
+
+        Parameters
+        ----------
+        train_audio_data (array): array of shape [num_train_samples, 250.000] with training samples as rows
+        train_labels (array): array of shape [num_train_samples, num_categories] labels for training
+        test_audio_data (array): array of shape [num_test_samples, 250.000] with training samples as rows
+        test_labels (array): array of shape [num_test_samples, num_categories] labels for training
+        val_audio_data (array): array of shape [num_val_samples, 250.000] with validation samples as rows
+        val_labels (array): array of shape [num_val_samples, num_categories] labels for validation
+        batch_size (int): batch size (for the training set)
+        num_epochs (int): number of epochs
+
+        Returns
+        ----------
+        train_iterator (Iterator object): iterator for the training dataset
+        test_iterator (Iterator object): iterator for the test dataset
+        val_iterator (Iterator object): iterator for the validation dataset
+        audio_input (tensor): tensor with the text inputs to be fed to the model
+        label_batch (tensor): tensor with the labels to be fed to the model
+        handle (string): handle string, to switch between the datasets
+        """
+        with tf.name_scope('dataset'):
+            # TODO: update method description
+            # creating the training dataset
+            train_dataset = tf.data.Dataset.from_tensor_slices((text_placeholder, audio_placeholder, label_placeholder))
+            train_dataset = train_dataset.repeat(num_epochs)
+            train_dataset = train_dataset.batch(batch_size)
+
+            # creating the test dataset
+            test_dataset = tf.data.Dataset.from_tensor_slices((test_text_data, test_audio_data, test_labels))
+            test_dataset = test_dataset.batch(test_labels.shape[0])
+
+            # creating the validation dataset
+            val_dataset = tf.data.Dataset.from_tensor_slices((val_text_data, val_audio_data, val_labels))
+            val_dataset = val_dataset.batch(val_labels.shape[0])
+
+            # creating the iterators from the datasets
+            train_iterator = train_dataset.make_initializable_iterator()
+            test_iterator = test_dataset.make_initializable_iterator()
+            val_iterator = val_dataset.make_initializable_iterator()
+
+            # creating the handle
+            handle = tf.placeholder(tf.string, shape=[], name='handle')
+
+            # creating iterator
+            iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types,
+                                                           train_dataset.output_shapes)
+
+            # getting the next element
+            text_input, audio_input, label_batch = iterator.get_next()
+
+        return train_iterator, test_iterator, val_iterator, text_input, audio_input, label_batch, handle

@@ -7,6 +7,7 @@ Created on Tue May 14, 2019
 import tensorflow as tf
 import numpy as np
 
+from model_audio import *
 
 class MultimodalAttentionModel:
     """
@@ -14,10 +15,12 @@ class MultimodalAttentionModel:
 
     """
 
-    def __init__(self, text_input, label_batch, batch_size, num_categories, learning_rate, dict_size, hidden_dim,
-                 num_layers, dr_prob, multimodal_model_status):
+    def __init__(self, text_input, label_batch, batch_size, num_categories, learning_rate, dict_size, hidden_dim_text,
+                 num_layers_text, dr_prob_text, multimodal_model_status, audio_input, num_filters_audio,
+                 filter_lengths_audio, n_pool_audio, audio_len, dr_prob_audio, hidden_dim_audio, num_layers_audio):
         # general
         self.text_input = text_input
+        self.audio_input = audio_input
         self.labels = label_batch
         self.batch_size = batch_size
         self.num_categories = num_categories
@@ -31,15 +34,43 @@ class MultimodalAttentionModel:
         self.dict_size = dict_size
         self.embed_dim = 300  # using GloVe
 
-        # recurrent layers
-        self.hidden_dim = hidden_dim
-        self.num_layers = num_layers
-        self.dr_prob = dr_prob
+        # text recurrent layers
+        self.hidden_dim_text = hidden_dim_text
+        self.num_layers_text = num_layers_text
+        self.dr_prob_text = dr_prob_text
 
-        # output layers
+        # output layer
         self.y_labels = []
         self.M = None
         self.b = None
+
+        # audio network
+        self.num_filters_audio = num_filters_audio
+        self.filter_lengths_audio = filter_lengths_audio
+        self.n_pool_audio = n_pool_audio
+        self.audio_input_len = audio_len
+        self.dr_prob_audio = dr_prob_audio
+        self.hidden_dim_audio = hidden_dim_audio
+        self.num_layers_audio = num_layers_audio
+        self.conv_out_length = int(audio_len / (n_pool_audio[0] * n_pool_audio[1]))
+
+    def _create_audio_model(self):
+        """
+        Creates the audio model in the graph
+        """
+        print('Creating the audio model...')
+        # instantiating object of the class AudioModel
+        audio_model = AudioModel(self.audio_input, self.labels, self.batch_size, self.num_categories,
+                                 self.learning_rate, self.num_filters_audio, self.filter_lengths_audio,
+                                 self.audio_input_len, self.n_pool_audio, self.hidden_dim_audio, self.num_layers_audio,
+                                 self.dr_prob_audio)
+
+        # building the audio model's graph
+        audio_model._create_conv_layers()
+        audio_model._create_recursive_net()
+
+        # getting the audio hidden states for the current batch
+        self.audio_hidden_states = tf.stack(audio_model.outputs_enc, axis=2)
 
     def _create_placeholders(self):
         """
@@ -48,8 +79,6 @@ class MultimodalAttentionModel:
         print('Creating placeholders...')
         self.embedding_GloVe = tf.placeholder(tf.float64, shape=[self.dict_size, self.embed_dim],
                                               name='embedding_placeholder')
-        self.audio_hidden_states = tf.placeholder(tf.float64, shape=[None, self.hidden_dim, 30],  ###### remove this 30 and add time_steps
-                                                  name='audio_rnn_hidden_states')
 
     def _create_embedding(self):
         """
@@ -81,7 +110,7 @@ class MultimodalAttentionModel:
         (GRUCell object): instance of a GRU cell
         """
         # a single instance of the GRU
-        return tf.contrib.rnn.GRUCell(num_units=self.hidden_dim)
+        return tf.contrib.rnn.GRUCell(num_units=self.hidden_dim_text)
 
     def gru_dropout_cell(self):
         """
@@ -92,20 +121,27 @@ class MultimodalAttentionModel:
         (DropoutWrapper object): instance of a GRU cell with the specified dropout probability
         """
         # specified dropout between the layers
-        return tf.contrib.rnn.DropoutWrapper(self.gru_cell(), input_keep_prob=self.dr_prob,
-                                             output_keep_prob=self.dr_prob)
+        return tf.contrib.rnn.DropoutWrapper(self.gru_cell(), input_keep_prob=self.dr_prob_text,
+                                             output_keep_prob=self.dr_prob_text)
 
     def attention_mechanism(self, text_hidden_state):
         """
         Implements Luong's attention mechanism between the current text model's hidden state and all of the
         audio model hidden states and returns the context vector
 
-        :param text_hidden_state:
-        :return:
+        Parameters
+        ----------
+        text_hidden_state (tensor): tensor of shape [batch_size, hidden_dim_text] with the current hidden states of the
+                                    text model for the batch
+
+        Returns
+        ----------
+        transformed_hidden_state (tensor): tensor of shape [batch_size, hidden_dim_text] with the transformed hidden
+                                           state (after applying attention)
         """
         # reshaping the tensors
-        audio_hidden_states = tf.reshape(self.audio_hidden_states, [-1, 30, self.hidden_dim])
-        text_hidden_state = tf.reshape(text_hidden_state, [-1, self.hidden_dim, 1])
+        audio_hidden_states = tf.reshape(self.audio_hidden_states, [-1, self.conv_out_length, self.hidden_dim_audio])
+        text_hidden_state = tf.reshape(text_hidden_state, [-1, self.hidden_dim_text, 1])
 
         # calculating the scores (similarity between the current text hidden state and all of the audio hidden states)
         score = tf.matmul(audio_hidden_states, text_hidden_state)
@@ -118,7 +154,7 @@ class MultimodalAttentionModel:
         context_vector = tf.reduce_sum(weighted_states, axis=1)
 
         # concatenating the context vector with the current text hidden state
-        text_hidden_state = tf.reshape(text_hidden_state, [-1, self.hidden_dim])
+        text_hidden_state = tf.reshape(text_hidden_state, [-1, self.hidden_dim_text])
         concatenated_state = tf.concat([context_vector, text_hidden_state], axis=1)
 
         # projecting back to the same dimensions as the hidden states
@@ -140,12 +176,13 @@ class MultimodalAttentionModel:
             rnn_input = [input_element[:, 0, :] for input_element in rnn_input]
 
             # creating the list with the specified number of layers of GRU cells with dropout
-            cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers)],
+            cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers_text)],
                                                    state_is_tuple=False)
 
             # initializing list with the outputs
             self.outputs_enc = []
-            self.W_c = tf.Variable(tf.random_uniform([2*self.hidden_dim, self.hidden_dim],
+            self.W_c = tf.Variable(tf.random_uniform([self.hidden_dim_audio + self.hidden_dim_text,
+                                                      self.hidden_dim_text],
                                                      minval=-0.25,
                                                      maxval=0.25,
                                                      dtype=tf.float64,
@@ -184,7 +221,7 @@ class MultimodalAttentionModel:
 
         # defining the output layer
         with tf.name_scope('output_layer'):
-            self.M = tf.Variable(tf.random_uniform([self.hidden_dim, self.num_categories],
+            self.M = tf.Variable(tf.random_uniform([self.hidden_dim_text, self.num_categories],
                                                    minval=-0.25,
                                                    maxval=0.25,
                                                    dtype=tf.float64,
@@ -231,8 +268,9 @@ class MultimodalAttentionModel:
 
     def build_graph(self):
         """
-        Method that builds the graph for the text model, which consists of recurrent layers
+        Method that builds the graph for the multimodal model with attention
         """
+        self._create_audio_model()
         self._create_placeholders()
         self._create_embedding()
         self._initialize_embedding()

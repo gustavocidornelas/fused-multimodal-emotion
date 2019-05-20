@@ -6,14 +6,15 @@ Created on Tue May 14, 2019
 
 import tensorflow as tf
 
-from parameters.parameters import *
-from model.process_data_text import *
-from model.process_data_audio import *
-from model.process_data_multimodal import *
-from model.model_text import *
-from model.model_multimodal_attention import *
-from model.import_model import *
-from model.evaluate_text import *
+import gc
+
+from parameters import *
+from process_data_text import *
+from process_data_audio import *
+from process_data_multimodal import *
+from model_text import *
+from model_multimodal_attention import *
+from evaluate_text import *
 
 
 if __name__ == '__main__':
@@ -22,6 +23,9 @@ if __name__ == '__main__':
     text_data_handler = ProcessDataText(data_path)
     audio_data_handler = ProcessDataAudio(data_path)
     multi_data_handler = ProcessDataMultimodal(data_path, text_data_handler, audio_data_handler)
+
+    del audio_data_handler
+    gc.collect()
 
     # splitting the data int training, validation and test sets
     train_text_data, train_audio_data, train_labels, test_text_data, test_audio_data, test_labels, val_text_data, \
@@ -33,19 +37,25 @@ if __name__ == '__main__':
     val_labels = text_data_handler.label_one_hot(label=val_labels, num_categories=num_categories)
 
     # creating the text datasets
-    train_text_iterator, test_text_iterator, val_text_iterator, text_input, text_label_batch, text_handle = \
-        text_data_handler.create_datasets(train_text_data, train_labels, test_text_data, test_labels, val_text_data,
-                                     val_labels, batch_size, num_epochs)
+    text_placeholder = tf.placeholder(tf.int64, shape=[None, train_text_data.shape[1]], name='text_input_placeholder')
+    audio_placeholder = tf.placeholder(tf.float64, shape=[None, train_audio_data.shape[1]],
+                                       name='audio_input_placeholder')
+    label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories], name='labels_placeholder')
 
-    # creating the text model (model that is going to be trained)
-    #text_model = TextModel(text_input, text_label_batch, batch_size, num_categories, learning_rate,
-     #                      text_data_handler.dict_size, hidden_dim_text, num_layers_text, dr_prob_text,
-      #                     multimodal_model_status)
-    #text_model.build_graph()
+    train_iterator, test_iterator, val_iterator, text_input, audio_input, label_batch, handle = \
+        multi_data_handler.create_datasets(text_placeholder, audio_placeholder, label_placeholder,
+                                                           test_text_data, test_audio_data, test_labels, val_text_data,
+                                                           val_audio_data, val_labels, batch_size, num_epochs)
 
-    multimodal_model = MultimodalAttentionModel(text_input, text_label_batch, batch_size, num_categories, learning_rate,
+    del multi_data_handler
+    gc.collect()
+
+    # creating the multimodal model with attention
+    multimodal_model = MultimodalAttentionModel(text_input, label_batch, batch_size, num_categories, learning_rate,
                                                 text_data_handler.dict_size, hidden_dim_text, num_layers_text,
-                                                dr_prob_text, multimodal_model_status)
+                                                dr_prob_text, multimodal_model_status, audio_input, num_filters_audio,
+                                                filter_lengths_audio, n_pool_audio, train_audio_data.shape[1],
+                                                dr_prob_audio, hidden_dim_audio, num_layers_audio)
     multimodal_model.build_graph()
 
     # evaluation object
@@ -60,21 +70,22 @@ if __name__ == '__main__':
         writer_train = tf.summary.FileWriter('../graphs/graph_train', sess.graph)
         writer_val = tf.summary.FileWriter('../graphs/graph_val', sess.graph)
 
-        # importing the pre-trained audio model
-        audio_model = ImportAudioModel(train_audio_data, train_labels, test_audio_data, test_labels, val_audio_data,
-                                       val_labels)
-
         # training loop
         print("Training...")
 
+        # initializing iterator with the training data
+        sess.run(train_iterator.initializer, feed_dict={text_placeholder: train_text_data,
+                                                        audio_placeholder: train_audio_data,
+                                                        label_placeholder: train_labels})
+
         # creating the text training, testing and validation handles (to switch between datasets)
-        train_text_handle = sess.run(train_text_iterator.string_handle())
-        test_text_handle = sess.run(test_text_iterator.string_handle())
-        val_text_handle = sess.run(val_text_iterator.string_handle())
+        train_handle = sess.run(train_iterator.string_handle())
+        test_handle = sess.run(test_iterator.string_handle())
+        val_handle = sess.run(val_iterator.string_handle())
 
         # loading pre-trained embedding vector to placeholder
         sess.run(multimodal_model.embedding_init, feed_dict={multimodal_model.embedding_GloVe:
-                                                                 text_data_handler.get_glove()})
+                                                             text_data_handler.get_glove()})
 
         batch_count = 1
 
@@ -82,15 +93,16 @@ if __name__ == '__main__':
         best_train_accuracy = 0
         best_val_accuracy = 0
 
+        del text_data_handler
+        gc.collect()
+
         # feeding the batches to the model
         while True:
             try:
-                audio_hidden_states = audio_model.run_audio_model_train()
-
-                _, accuracy, loss, summary = sess.run([multimodal_model.optimizer, multimodal_model.accuracy, multimodal_model.loss,
-                                                       multimodal_model.summary_op],
-                                                      feed_dict={text_handle: train_text_handle,
-                                                                 multimodal_model.audio_hidden_states: audio_hidden_states})
+                _, accuracy, loss, summary = sess.run(
+                    [multimodal_model.optimizer, multimodal_model.accuracy, multimodal_model.loss,
+                     multimodal_model.summary_op],
+                    feed_dict={handle: train_handle})
 
                 writer_train.add_summary(summary, global_step=multimodal_model.global_step.eval())
 
