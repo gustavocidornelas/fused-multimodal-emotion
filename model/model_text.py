@@ -13,7 +13,7 @@ class TextModel:
     """
 
     def __init__(self, text_input, label_batch, batch_size, num_categories, learning_rate, dict_size, hidden_dim,
-                 num_layers, dr_prob, multimodal_model_status):
+                 num_layers, dr_prob, multimodal_model_status=False):
         # general
         self.text_input = text_input
         self.labels = label_batch
@@ -44,9 +44,9 @@ class TextModel:
         Creates the placeholder for the pre-trained embedding
         """
         print('Creating placeholders...')
-        self.embedding_GloVe = tf.placeholder(tf.float64, shape=[self.dict_size, self.embed_dim],
+        self.embedding_GloVe = tf.placeholder(tf.float32, shape=[self.dict_size, self.embed_dim],
                                               name='embedding_placeholder')
-        self.initial_hidden_state = tf.placeholder(tf.float64, shape=[None, self.hidden_dim],
+        self.initial_hidden_state = tf.placeholder(tf.float32, shape=[None, self.hidden_dim],
                                                    name='initial_rnn_hidden_state')
 
     def _create_embedding(self):
@@ -57,7 +57,7 @@ class TextModel:
 
         with tf.name_scope('embedding_layer'):
             self.embedding_matrix = tf.Variable(tf.random_normal([self.dict_size, self.embed_dim], mean=0.0,
-                                                                 stddev=0.01, dtype=tf.float64, seed=None),
+                                                                 stddev=0.01, dtype=tf.float32, seed=None),
                                                 trainable=True, name='embed_matrix')
 
             self.embedded_input = tf.nn.embedding_lookup(self.embedding_matrix, self.text_input, name='embedded_input')
@@ -114,17 +114,16 @@ class TextModel:
                 # simulating the time steps in the RNN with initialized hidden state
                 self.outputs_enc, self.last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input,
                                                                           initial_state=self.initial_hidden_state,
-                                                                          dtype=tf.float64)
+                                                                          dtype=tf.float32)
             else:
                 # simulating the time steps in the RNN without hidden state initialization
                 self.outputs_enc, self.last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input,
-                                                                          dtype=tf.float64)
+                                                                          dtype=tf.float32)
 
             # adding hidden states to collection to be restored later
             hidden_states = tf.stack(self.outputs_enc, axis=2)
             tf.add_to_collection('hidden_states', hidden_states)
 
-            #self.final_encoder = self.last_states_enc[-1]
             self.final_encoder = self.last_states_enc
 
     def _create_output_layers(self):
@@ -138,11 +137,11 @@ class TextModel:
             self.M = tf.Variable(tf.random_uniform([self.hidden_dim, self.num_categories],
                                                    minval=-0.25,
                                                    maxval=0.25,
-                                                   dtype=tf.float64,
+                                                   dtype=tf.float32,
                                                    seed=None),
                                  trainable=True, name='W')
 
-            self.b = tf.Variable(tf.zeros([1], dtype=tf.float64), trainable=True, name='b')
+            self.b = tf.Variable(tf.zeros([1], dtype=tf.float32), trainable=True, name='b')
 
             self.batch_prediction = tf.add(tf.matmul(self.final_encoder, self.M), self.b, name='batch_prediction')
 
@@ -153,7 +152,7 @@ class TextModel:
 
             # batch accuracy
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.batch_prediction, 1),
-                                           tf.argmax(self.labels, 1)), tf.float64), name='mean_batch_accuracy')
+                                           tf.argmax(self.labels, 1)), tf.float32), name='mean_batch_accuracy')
 
     def _create_optimizer(self):
         """
