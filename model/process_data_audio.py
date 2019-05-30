@@ -162,7 +162,7 @@ class ProcessDataAudio:
 
             # creating the validation dataset
             val_dataset = tf.data.Dataset.from_tensor_slices((val_audio_data, val_labels))
-            val_dataset = val_dataset.batch(val_audio_data.shape[0])
+            val_dataset = val_dataset.batch(1)
 
             # creating the iterators from the datasets
             train_iterator = train_dataset.make_initializable_iterator()

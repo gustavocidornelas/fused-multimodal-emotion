@@ -4,6 +4,7 @@ Created on Mon April 8, 2019
 @author: Gustavo Cid Ornelas
 """
 
+import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -30,22 +31,32 @@ class EvaluateAudio:
 
         Returns
         ----------
-        val_accuracy (float): accuracy on the validation set
+        validation_accuracy (float): accuracy on the validation set
         """
         print('Evaluating on the validation set...')
 
         # initializing the validation iterator with the validation data
         sess.run(val_iterator.initializer)
 
-        # evaluating the model on the validation dataset
-        _, val_accuracy, val_loss, val_summary = sess.run([model.optimizer, model.accuracy, model.loss,
-                                                           model.summary_op], feed_dict={handle: val_handle})
+        num_correct_samples = 0
+        total_samples = 0
 
-        writer_val.add_summary(val_summary, global_step=model.global_step.eval())
+        while True:
+            try:
+                # evaluating the model on the validation dataset
+                val_accuracy, val_loss, val_summary = sess.run([model.accuracy, model.loss,
+                                                                model.summary_op], feed_dict={handle: val_handle})
 
-        print('Validation accuracy: {:.4f}'.format(val_accuracy))
+                num_correct_samples += val_accuracy
+                total_samples += 1
 
-        return val_accuracy
+                writer_val.add_summary(val_summary, global_step=model.global_step.eval())
+
+            except tf.errors.OutOfRangeError:
+                validation_accuracy = num_correct_samples / total_samples
+                print('Validation accuracy: {:.4f}'.format(validation_accuracy))
+
+                return validation_accuracy
 
     def evaluate_audio_model_test(self, sess, model, test_iterator, handle, test_handle):
         """
@@ -70,7 +81,7 @@ class EvaluateAudio:
         sess.run(test_iterator.initializer)
 
         # evaluating the model on the test dataset
-        _, test_accuracy, test_loss, true_label, prediction = sess.run([model.optimizer, model.accuracy, model.loss,
+        test_accuracy, test_loss, true_label, prediction = sess.run([model.accuracy, model.loss,
                                                                         model.labels, model.batch_prediction],
                                                                         feed_dict={handle: test_handle})
 
