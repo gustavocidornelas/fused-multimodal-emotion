@@ -54,6 +54,11 @@ class MultimodalAttentionModel:
         self.num_layers_audio = num_layers_audio
         self.conv_out_length = int(audio_len / (n_pool_audio[0] * n_pool_audio[1]))
 
+        # attention
+        self.W1 = tf.keras.layers.Dense(hidden_dim_text)
+        self.W2 = tf.keras.layers.Dense(hidden_dim_text)
+        self.V = tf.keras.layers.Dense(1)
+
     def _create_audio_model(self):
         """
         Creates the audio model in the graph
@@ -77,7 +82,7 @@ class MultimodalAttentionModel:
         Creates the placeholder for the pre-trained embedding
         """
         print('Creating placeholders...')
-        self.embedding_GloVe = tf.placeholder(tf.float64, shape=[self.dict_size, self.embed_dim],
+        self.embedding_GloVe = tf.placeholder(tf.float32, shape=[self.dict_size, self.embed_dim],
                                               name='embedding_placeholder')
 
     def _create_embedding(self):
@@ -88,7 +93,7 @@ class MultimodalAttentionModel:
 
         with tf.name_scope('embedding_layer'):
             self.embedding_matrix = tf.Variable(tf.random_normal([self.dict_size, self.embed_dim], mean=0.0,
-                                                                 stddev=0.01, dtype=tf.float64, seed=None),
+                                                                 stddev=0.01, dtype=tf.float32, seed=None),
                                                 trainable=True, name='embed_matrix')
 
             self.embedded_input = tf.nn.embedding_lookup(self.embedding_matrix, self.text_input, name='embedded_input')
@@ -141,10 +146,11 @@ class MultimodalAttentionModel:
         """
         # reshaping the tensors
         audio_hidden_states = tf.reshape(self.audio_hidden_states, [-1, self.conv_out_length, self.hidden_dim_audio])
-        text_hidden_state = tf.reshape(text_hidden_state, [-1, self.hidden_dim_text, 1])
+        text_hidden_state = tf.reshape(text_hidden_state, [-1, 1, self.hidden_dim_text])
 
         # calculating the scores (similarity between the current text hidden state and all of the audio hidden states)
-        score = tf.matmul(audio_hidden_states, text_hidden_state)
+        #score = tf.matmul(audio_hidden_states, text_hidden_state)
+        score = self.V(tf.nn.tanh(self.W1(audio_hidden_states) + self.W2(text_hidden_state)))
 
         # calculating the attention weights
         attention_weights = tf.nn.softmax(score, dim=1, name='attention_weights')
@@ -164,7 +170,7 @@ class MultimodalAttentionModel:
 
     def _create_recursive_net(self):
         """
-        Creates the RNN with GRUs and dropout, as specified
+            Creates the RNN with GRUs and dropout, as specified
         """
         print('Creating the recurrent layers...')
 
@@ -185,7 +191,7 @@ class MultimodalAttentionModel:
                                                       self.hidden_dim_text],
                                                      minval=-0.25,
                                                      maxval=0.25,
-                                                     dtype=tf.float64,
+                                                     dtype=tf.float32,
                                                      seed=None
                                                      ),
                                    trainable=True,
@@ -193,6 +199,7 @@ class MultimodalAttentionModel:
 
             # unrolling the RNN manually
             for time_step, input in enumerate(rnn_input):
+
                 # checking if it is the first time step
                 if time_step == 0:
                     # initialize hidden state of the text RNN with the last state from the audio RNN
@@ -224,11 +231,11 @@ class MultimodalAttentionModel:
             self.M = tf.Variable(tf.random_uniform([self.hidden_dim_text, self.num_categories],
                                                    minval=-0.25,
                                                    maxval=0.25,
-                                                   dtype=tf.float64,
+                                                   dtype=tf.float32,
                                                    seed=None),
                                  trainable=True, name='W')
 
-            self.b = tf.Variable(tf.zeros([1], dtype=tf.float64), trainable=True, name='b')
+            self.b = tf.Variable(tf.zeros([1], dtype=tf.float32), trainable=True, name='b')
 
             self.batch_prediction = tf.add(tf.matmul(self.final_encoder, self.M), self.b, name='batch_prediction')
 
@@ -239,7 +246,7 @@ class MultimodalAttentionModel:
 
             # batch accuracy
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.batch_prediction, 1),
-                                           tf.argmax(self.labels, 1)), tf.float64), name='mean_batch_accuracy')
+                                           tf.argmax(self.labels, 1)), tf.float32), name='mean_batch_accuracy')
 
     def _create_optimizer(self):
         """

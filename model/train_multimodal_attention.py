@@ -14,7 +14,7 @@ from process_data_audio import *
 from process_data_multimodal import *
 from model_text import *
 from model_multimodal_attention import *
-from evaluate_text import *
+from evaluate_multimodal_attention import *
 
 
 if __name__ == '__main__':
@@ -37,15 +37,16 @@ if __name__ == '__main__':
     val_labels = text_data_handler.label_one_hot(label=val_labels, num_categories=num_categories)
 
     # creating the text datasets
-    text_placeholder = tf.placeholder(tf.int64, shape=[None, train_text_data.shape[1]], name='text_input_placeholder')
-    audio_placeholder = tf.placeholder(tf.float64, shape=[None, train_audio_data.shape[1]],
+    text_placeholder = tf.placeholder(tf.int32, shape=[None, train_text_data.shape[1]], name='text_input_placeholder')
+    audio_placeholder = tf.placeholder(tf.float32, shape=[None, train_audio_data.shape[1]],
                                        name='audio_input_placeholder')
-    label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories], name='labels_placeholder')
+    label_placeholder = tf.placeholder(tf.float32, shape=[None, num_categories], name='labels_placeholder')
 
     train_iterator, test_iterator, val_iterator, text_input, audio_input, label_batch, handle = \
-        multi_data_handler.create_datasets(text_placeholder, audio_placeholder, label_placeholder,
-                                                           test_text_data, test_audio_data, test_labels, val_text_data,
-                                                           val_audio_data, val_labels, batch_size, num_epochs)
+        multi_data_handler.create_datasets(text_placeholder, audio_placeholder, label_placeholder, test_text_data,
+                                           test_audio_data, test_labels, tf.cast(val_text_data, dtype=tf.int32),
+                                           tf.cast(val_audio_data, dtype=tf.float32),
+                                           tf.cast(val_labels, dtype=tf.float32), batch_size, num_epochs)
 
     del multi_data_handler
     gc.collect()
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     multimodal_model.build_graph()
 
     # evaluation object
-    evaluator = EvaluateText()
+    evaluator = EvaluateMultimodalAttention()
 
     # training the model
     with tf.Session() as sess:
@@ -116,14 +117,14 @@ if __name__ == '__main__':
                 batch_count += 1
 
                 # evaluating on the validation set every 50 batches
-                #if batch_count % 50 == 0:
+                if batch_count % 50 == 0:
                     # calculating the accuracy on the validation set
-                #    val_accuracy = evaluator.evaluate_text_model_val(sess, text_model, val_text_iterator, text_handle,
-                 #                                                    val_text_handle, writer_val)
+                    val_accuracy = evaluator.evaluate_multi_model_val(sess, multimodal_model, val_iterator, handle,
+                                                                      val_handle, writer_val)
 
                     # saving the best training accuracy so far
-                 #   if val_accuracy > best_val_accuracy:
-                 #       best_val_accuracy = val_accuracy
+                    if val_accuracy > best_val_accuracy:
+                        best_val_accuracy = val_accuracy
 
             except tf.errors.OutOfRangeError:
                 print('End of training')
@@ -131,8 +132,11 @@ if __name__ == '__main__':
                 print('Best validation accuracy: {:.4f}'.format(best_val_accuracy))
 
                 # evaluating on the test set
-                #test_accuracy = evaluator.evaluate_text_model_test(sess, text_model, test_text_iterator, text_handle,
-                 #                                                  test_text_handle)
+                test_accuracy = evaluator.evaluate_multi_model_test(sess, multimodal_model, test_iterator, handle,
+                                                                   test_handle)
 
                 break
 
+        # saving the final text model
+        saver = tf.train.Saver()
+        saver.save(sess, '../pretrained-models/pt_multimodal_model')

@@ -20,9 +20,9 @@ class ProcessDataMultimodal:
     def __init__(self, data_path, text_data_handler, audio_data_handler):
 
         # getting the data
-        self.text_data = text_data_handler.text_data[:200, :]
-        self.audio_data = audio_data_handler.audio_data[:200, :]
-        self.labels = text_data_handler.labels[:200]
+        self.text_data = text_data_handler.text_data#[:100, :]
+        self.audio_data = audio_data_handler.audio_data#[:100, :]
+        self.labels = text_data_handler.labels#[:100]
 
     def split_train_test(self, prop_train, prop_test):
         """
@@ -126,7 +126,7 @@ class ProcessDataMultimodal:
 
             # creating the validation dataset
             val_dataset = tf.data.Dataset.from_tensor_slices((val_text_data, val_audio_data, val_labels))
-            val_dataset = val_dataset.batch(val_labels.shape[0])
+            val_dataset = val_dataset.batch(1)
 
             # creating the iterators from the datasets
             train_iterator = train_dataset.make_initializable_iterator()
