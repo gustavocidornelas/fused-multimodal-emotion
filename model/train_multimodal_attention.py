@@ -43,8 +43,11 @@ if __name__ == '__main__':
     label_placeholder = tf.placeholder(tf.float32, shape=[None, num_categories], name='labels_placeholder')
 
     train_iterator, test_iterator, val_iterator, text_input, audio_input, label_batch, handle = \
-        multi_data_handler.create_datasets(text_placeholder, audio_placeholder, label_placeholder, test_text_data,
-                                           test_audio_data, test_labels, tf.cast(val_text_data, dtype=tf.int32),
+        multi_data_handler.create_datasets(text_placeholder, audio_placeholder, label_placeholder,
+                                           tf.cast(test_text_data, dtype=tf.int32),
+                                           tf.cast(test_audio_data, dtype=tf.float32),
+                                           tf.cast(test_labels, dtype=tf.float32),
+                                           tf.cast(val_text_data, dtype=tf.int32),
                                            tf.cast(val_audio_data, dtype=tf.float32),
                                            tf.cast(val_labels, dtype=tf.float32), batch_size, num_epochs)
 
@@ -117,7 +120,7 @@ if __name__ == '__main__':
                 batch_count += 1
 
                 # evaluating on the validation set every 50 batches
-                if batch_count % 50 == 0:
+                if batch_count % 150 == 0:
                     # calculating the accuracy on the validation set
                     val_accuracy = evaluator.evaluate_multi_model_val(sess, multimodal_model, val_iterator, handle,
                                                                       val_handle, writer_val)

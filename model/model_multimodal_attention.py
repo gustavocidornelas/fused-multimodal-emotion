@@ -54,7 +54,7 @@ class MultimodalAttentionModel:
         self.num_layers_audio = num_layers_audio
         self.conv_out_length = int(audio_len / (n_pool_audio[0] * n_pool_audio[1]))
 
-        # attention
+        # attention score
         self.W1 = tf.keras.layers.Dense(hidden_dim_text)
         self.W2 = tf.keras.layers.Dense(hidden_dim_text)
         self.V = tf.keras.layers.Dense(1)
