@@ -1,62 +1,28 @@
 """
-Created on Fri March 22, 2019
+Created on Fri May 10, 2019
 
 @author: Gustavo Cid Ornelas
 """
-import numpy as np
-import random
-import tensorflow as tf
+from model.process_data_text import *
+from model.process_data_audio import *
 
 
-class ProcessDataAudio:
+class ProcessDataMultimodal:
     """
-    Deals with the audio data. Loads all of the audio data and labels and splits it into training and testing sets
+    Deals with both the audio and textual data in the multimodal setting. Contains methods
 
     Attributes
     ----------
+    text_data (array): array of shape [num_samples, 128]. Each row corresponds to a transcription
     audio_data (array): array of shape [num_samples, 250.000]. Each row corresponds to a raw audio file
     labels (array): array of shape [num_samples] corresponding to the categories
     """
-    def __init__(self, data_path):
+    def __init__(self, data_path, text_data_handler, audio_data_handler):
 
-        self.data_path = data_path  # e. g. '../data/processed-data/'
-
-        # loading the audio data and the labels
-        self.audio_data = self._load_audio()
-        self.labels = self._load_labels()
-
-    def _load_audio(self):
-        """
-        Loads the audio FC_raw_audio.npy file  and creates an array with all of the audio samples
-
-        Returns
-        ----------
-        audio_data (array): array of shape [num_samples, 250.000]. Each row corresponds to a raw audio file
-        """
-        print('Loading the audio data...')
-        audio_file = self.data_path + 'FC_raw_audio.npy'
-
-        # reading the audio file
-        audio_data = np.load(audio_file)
-
-        return audio_data
-
-    def _load_labels(self):
-        """
-        Loads the audio FC_label.txt file  and creates an array with all of the labels
-
-        Returns
-        ----------
-        labels (array): array of shape [num_samples] corresponding to the categories
-        """
-        print('Loading the labels...')
-
-        labels_file = self.data_path + 'FC_label.txt'
-
-        # reading the labels file
-        labels = np.genfromtxt(labels_file, delimiter=',')
-
-        return labels
+        # getting the data
+        self.text_data = text_data_handler.text_data#[:100, :]
+        self.audio_data = audio_data_handler.audio_data#[:100, :]
+        self.labels = text_data_handler.labels#[:100]
 
     def split_train_test(self, prop_train, prop_test):
         """
@@ -68,10 +34,13 @@ class ProcessDataAudio:
                             training
         prop_test (float): number between 0 and 1 that determines the proportion of the data that will be used for
                             testing
+
         Returns
         ----------
+        train_text_data, test_text_data, val_text_data (array): arrays that correspond to the transcriptions
         train_audio_data, test_audio_data, val_audio_data (array): arrays that correspond to the raw audio samples
-        train_labels, test_labels, val_labels (array): arrays with the labels in the same order as the audio_data
+        train_labels, test_labels, val_labels (array): arrays with the labels in the same order as the text_data and
+                                                       audio_data
         """
         print('Splitting the data ...')
 
@@ -89,41 +58,36 @@ class ProcessDataAudio:
         num_train = int(prop_train * num_samples)
         num_test = int(prop_test * num_samples)
 
+        # length of the text and audio samples
+        text_len = self.text_data.shape[1]
+        audio_len = self.audio_data.shape[1]
+
         # concatenating data and labels to shuffle
-        data = np.concatenate((self.audio_data, self.labels.reshape(num_samples, 1)), axis=1)
+        data = np.concatenate((self.text_data, self.audio_data, self.labels.reshape(num_samples, 1)), axis=1)
 
         # shuffling the data
         np.random.shuffle(data)
 
         # splitting the data
-        train_audio_data = data[:num_train + 1, :-1]
+        train_text_data = data[:num_train + 1, :text_len]
+        train_audio_data = data[:num_train + 1, text_len:-1]
         train_labels = data[:num_train + 1, -1]
-        test_audio_data = data[num_train + 1: num_train + 1 + num_test + 1, :-1]
+        test_text_data = data[num_train + 1: num_train + 1 + num_test + 1, :text_len]
+        test_audio_data = data[num_train + 1: num_train + 1 + num_test + 1, text_len:-1]
         test_labels = data[num_train + 1: num_train + 1 + num_test + 1, -1]
-        val_audio_data = data[num_train + 1 + num_test + 1:, :-1]
+        val_text_data = data[num_train + 1 + num_test + 1:, :text_len]
+        val_audio_data = data[num_train + 1 + num_test + 1:, text_len:-1]
         val_labels = data[num_train + 1 + num_test + 1:, -1]
 
-        return train_audio_data, train_labels, test_audio_data, test_labels, val_audio_data, val_labels
+        # converting the text back to integer
+        train_text_data = train_text_data.astype(int)
+        test_text_data = test_text_data.astype(int)
+        val_text_data = val_text_data.astype(int)
 
-    def label_one_hot(self, label, num_categories):
-        """
-        Converts the labels to the format one-hot, which is expected by our model
+        return train_text_data, train_audio_data, train_labels, test_text_data, test_audio_data, test_labels, \
+               val_text_data, val_audio_data, val_labels
 
-        Returns
-        ----------
-        one_hot_label (array): array of shape [len(label), num_categories] with a 1 in the corresponding category
-        """
-        print('Converting the labels to one-hot format...')
-
-        # array that stores all of the one-hot vectors for the labels [samples, num_categories])
-        one_hot_label = np.zeros((len(label), num_categories))
-
-        for idx, element in enumerate(label):
-            one_hot_label[idx, int(element)] = 1
-
-        return one_hot_label
-
-    def create_datasets(self, audio_placeholder, label_placeholder, test_audio_data, test_labels, val_audio_data,
+    def create_datasets(self, text_placeholder, audio_placeholder, label_placeholder, test_text_data, test_audio_data, test_labels, val_text_data, val_audio_data,
                         val_labels, batch_size, num_epochs):
         """
         Creates the training and validation datasets and returns the iterators, next elements of the dataset and the
@@ -150,18 +114,18 @@ class ProcessDataAudio:
         handle (string): handle string, to switch between the datasets
         """
         with tf.name_scope('dataset'):
-
+            # TODO: update method description
             # creating the training dataset
-            train_dataset = tf.data.Dataset.from_tensor_slices((audio_placeholder, label_placeholder))
+            train_dataset = tf.data.Dataset.from_tensor_slices((text_placeholder, audio_placeholder, label_placeholder))
             train_dataset = train_dataset.repeat(num_epochs)
             train_dataset = train_dataset.batch(batch_size)
 
             # creating the test dataset
-            test_dataset = tf.data.Dataset.from_tensor_slices((test_audio_data, test_labels))
-            test_dataset = test_dataset.batch(test_audio_data.shape[0])
+            test_dataset = tf.data.Dataset.from_tensor_slices((test_text_data, test_audio_data, test_labels))
+            test_dataset = test_dataset.batch(test_labels.shape[0])
 
             # creating the validation dataset
-            val_dataset = tf.data.Dataset.from_tensor_slices((val_audio_data, val_labels))
+            val_dataset = tf.data.Dataset.from_tensor_slices((val_text_data, val_audio_data, val_labels))
             val_dataset = val_dataset.batch(1)
 
             # creating the iterators from the datasets
@@ -177,9 +141,6 @@ class ProcessDataAudio:
                                                            train_dataset.output_shapes)
 
             # getting the next element
-            audio_input, label_batch = iterator.get_next()
+            text_input, audio_input, label_batch = iterator.get_next()
 
-        return train_iterator, test_iterator, val_iterator, audio_input, label_batch, handle
-
-
-
+        return train_iterator, test_iterator, val_iterator, text_input, audio_input, label_batch, handle

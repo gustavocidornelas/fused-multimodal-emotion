@@ -6,11 +6,12 @@ Created on Mon March 25, 2019
 
 import tensorflow as tf
 import os
+import gc
 
-from parameters.parameters import *
-from model.process_data_audio import *
-from model.model_audio import *
-from model.evaluate_audio import *
+from parameters import *
+from process_data_audio import *
+from model_audio import *
+from evaluate_audio import *
 
 
 if __name__ == '__main__':
@@ -27,13 +28,17 @@ if __name__ == '__main__':
     val_labels = data_handler.label_one_hot(label=val_labels, num_categories=num_categories)
 
     # placeholders
-    audio_placeholder = tf.placeholder(tf.float64, shape=[None, audio_input_len], name='audio_input_placeholder')
-    label_placeholder = tf.placeholder(tf.float64, shape=[None, num_categories], name='labels_placeholder')
+    audio_placeholder = tf.placeholder(tf.float32, shape=[None, audio_input_len], name='audio_input_placeholder')
+    label_placeholder = tf.placeholder(tf.float32, shape=[None, num_categories], name='labels_placeholder')
 
     # creating training and validation datasets
     train_iterator, test_iterator, val_iterator, audio_input, label_batch, handle = data_handler.create_datasets(
-        audio_placeholder, label_placeholder, test_audio_data, test_labels, val_audio_data, val_labels, batch_size,
-        num_epochs)
+        audio_placeholder, label_placeholder, tf.cast(test_audio_data, dtype=tf.float32),
+        tf.cast(test_labels, dtype=tf.float32), tf.cast(val_audio_data, dtype=tf.float32),
+        tf.cast(val_labels, dtype=tf.float32), batch_size, num_epochs)
+
+    del data_handler
+    gc.collect()
 
     # creating the model
     model = AudioModel(audio_input, label_batch, batch_size, num_categories, learning_rate, num_filters_audio,

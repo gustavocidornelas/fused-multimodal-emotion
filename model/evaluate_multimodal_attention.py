@@ -1,29 +1,29 @@
 """
-Created on Mon April 8, 2019
+Created on Mon May 20, 2019
 
 @author: Gustavo Cid Ornelas
 """
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import confusion_matrix
 
 
-class EvaluateAudio:
+class EvaluateMultimodalAttention:
     """
-    Class that contains the methods to evaluate the text model on the test or validation set
+    Class that contains the methods to evaluate the multimodal model with attention on the test or validation set
     """
 
-    def evaluate_audio_model_val(self, sess, model, val_iterator, handle, val_handle, writer_val):
+    def evaluate_multi_model_val(self, sess, model, val_iterator, handle, val_handle, writer_val):
         """
         Performs the evaluation of the model in the validation set
 
         Parameters
         ----------
         sess: tensorflow session
-        model (TextModel object): text model
+        model (MultimodalAttentionModel object): multimodal model with attention
         val_iterator (Iterator object): iterator for the validation dataset
         handle (string): handle, to switch between the datasets
         val_handle (string): validation dataset handle
@@ -54,18 +54,19 @@ class EvaluateAudio:
 
             except tf.errors.OutOfRangeError:
                 validation_accuracy = num_correct_samples / total_samples
+
                 print('Validation accuracy: {:.4f}'.format(validation_accuracy))
 
                 return validation_accuracy
 
-    def evaluate_audio_model_test(self, sess, model, test_iterator, handle, test_handle):
+    def evaluate_multi_model_test(self, sess, model, test_iterator, handle, test_handle):
         """
         Performs the evaluation of the model in the test set
 
         Parameters
         ----------
         sess: tensorflow session
-        model (TextModel object): text model
+        model (MultimodalAttentionMode object): multimodal model
         test_iterator (Iterator object): iterator for the test dataset
         handle (string): handle, to switch between the datasets
         test_handle (string): test dataset handle
@@ -134,5 +135,3 @@ class EvaluateAudio:
         fig.tight_layout()
 
         plt.show()
-
-

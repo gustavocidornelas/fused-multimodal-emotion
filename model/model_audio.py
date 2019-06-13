@@ -105,7 +105,7 @@ class AudioModel:
             cell_enc = tf.nn.rnn_cell.MultiRNNCell([self.gru_dropout_cell() for _ in range(self.num_layers)])
 
             # simulating the time steps in the RNN (returns output activations and last hidden state)
-            self.outputs_enc, last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input, dtype=tf.float64)
+            self.outputs_enc, last_states_enc = tf.nn.static_rnn(cell=cell_enc, inputs=rnn_input, dtype=tf.float32)
 
             self.final_encoder = last_states_enc[-1]
 
@@ -124,11 +124,11 @@ class AudioModel:
             self.M = tf.Variable(tf.random_uniform([self.hidden_dim, self.num_categories],
                                                    minval=-0.25,
                                                    maxval=0.25,
-                                                   dtype=tf.float64,
+                                                   dtype=tf.float32,
                                                    seed=None),
                                  trainable=True, name='W')
 
-            self.b = tf.Variable(tf.zeros([1], dtype=tf.float64), trainable=True, name='b')
+            self.b = tf.Variable(tf.zeros([1], dtype=tf.float32), trainable=True, name='b')
 
             self.batch_prediction = tf.add(tf.matmul(self.final_encoder, self.M), self.b, name='batch_prediction')
 
@@ -139,7 +139,7 @@ class AudioModel:
 
             # batch accuracy
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.batch_prediction, 1),
-                                                            tf.argmax(self.labels, 1)), tf.float64),
+                                                            tf.argmax(self.labels, 1)), tf.float32),
                                            name='mean_batch_accuracy')
 
     def _create_optimizer(self):

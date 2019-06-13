@@ -6,10 +6,10 @@ Created on Mon April 8, 2019
 
 import tensorflow as tf
 
-from parameters.parameters import *
-from model.process_data_text import *
-from model.model_text import *
-from model.evaluate_text import *
+from parameters import *
+from process_data_text import *
+from model_text import *
+from evaluate_text import *
 
 
 if __name__ == '__main__':
@@ -27,12 +27,13 @@ if __name__ == '__main__':
 
     # creating training, testing and validation datasets
     train_iterator, test_iterator, val_iterator, text_input, label_batch, handle = \
-        data_handler.create_datasets(train_text_data, train_labels, test_text_data, test_labels, val_text_data,
-                                     val_labels, batch_size, num_epochs)
+        data_handler.create_datasets(train_text_data, tf.cast(train_labels, dtype=tf.float32), test_text_data,
+                                     tf.cast(test_labels, dtype=tf.float32), val_text_data,
+                                     tf.cast(val_labels, dtype=tf.float32), batch_size, num_epochs)
 
     # creating the model
     model = TextModel(text_input, label_batch, batch_size, num_categories, learning_rate, data_handler.dict_size,
-                      hidden_dim_text, num_layers_text, dr_prob_text)
+                      hidden_dim_text, num_layers_text, dr_prob_text, multimodal_model_status)
     model.build_graph()
 
     # evaluation object
