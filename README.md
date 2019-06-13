@@ -22,7 +22,7 @@ The file `prepare_raw_audio.py` reads all the raw audio files that are used by o
 Created when the model starts training. Contains two folders: *graph_train* and *graph_val*, with the information that can be visualized on TensorBoard, including the model's graph and the training and validation accuracies and losses.
 
 ### _pretrained-models_
-Created once the model is trained. Saves the whole model with its weights, that can be used to do inference later.
+Created once the model is trained. Saves the whole model with its weights, that can be used to do inference at a later stage.
 
 ## Running 
 To train a model, the first step is obtaining all the data. If you already have all the preprocessed data in the correct folder within the _data_ directory, you are good to go. If you would like to truncate the raw audio files differently, you can edit that in `/preprocessing/prepare_raw_audio.py` and run it once. The preprocessed raw audio files will be saved to the correct directory.
