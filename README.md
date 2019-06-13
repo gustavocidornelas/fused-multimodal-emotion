@@ -2,7 +2,7 @@
 
 ## About
 
-This repository was developed as part of my semester project at the [Chair for Mathematical Information Science](https://www.mins.ee.ethz.ch/index.html), at [ETH Zürich](https://www.ethz.ch/en.html) in Spring 2019. The [full report] with the description of our motivation and approach is also avaliable.
+This repository was developed as part of my semester project at the [Chair for Mathematical Information Science](https://www.mins.ee.ethz.ch/index.html), at [ETH Zürich](https://www.ethz.ch/en.html) in Spring 2019. The full report with the detailed description of our approach is also avaliable [here].
 
 - [Organization](#organization)
 - [Running](#running)
