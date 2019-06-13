@@ -28,6 +28,10 @@ With the correct parameters, it is time to train. The proportion of the data use
 After training, the model is evaluated on the test set and the full model is saved to `/pretrained-models`.
 
 ## References
+The full report with the description of our approach is avaliable [here]. The code in this repository was developed as part of my semester project at the [Chair for Mathematical Information Science](https://www.mins.ee.ethz.ch/index.html), at ETH Zürich.
+
 A significant part of the code for this project is build over the code from [multimodal-speech-emotion](https://github.com/david-yoon/multimodal-speech-emotion). 
+
+
 
 
