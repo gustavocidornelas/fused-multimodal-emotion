@@ -1,8 +1,6 @@
-
 ##################################
 # Paths
 ##################################
-# TODO: add all of the relevant paths here instead of hardcoding them
 data_path = '../data/processed-data/'
 
 ##################################
@@ -15,8 +13,6 @@ num_categories = 4
 ##################################
 # batch size
 batch_size = 16
-# number of training steps
-#num_training_steps = 10000
 # learning rate
 learning_rate = 3e-4
 # number of epochs
@@ -51,5 +47,5 @@ dr_prob_text = 0.55
 ##################################
 # Multimodal
 ################################
-# 'True' if training the multimodal model (use hidden states from the audio model in the text)
+# 'True' if training the multimodal model without attention (use hidden states from the audio model in the text)
 multimodal_model_status = False
