@@ -22,7 +22,7 @@ The file `parameters.py` contains all of the relevant parameters for the simulat
 ###### _preprocessing_
 The file `prepare_raw_audio.py` reads all the raw audio files that are used by our model, truncates, zero pads and saves them to the expected directory within the _data_ folder. 
 ###### _graphs_
-Created when the model starts training. Contains two folders: *graph_train* and *graph_val*, with the information that can be visualized on TensorBoard, including the model's graph and the training and validation accuracies and losses.
+Created once the model starts training. Contains two folders: *graph_train* and *graph_val*, with the information that can be visualized on TensorBoard, including the model's graph and the training and validation accuracies and losses.
 ###### _pretrained-models_
 Created once the model is trained. Saves the whole model with its weights, that can be used to do inference at a later stage.
 
