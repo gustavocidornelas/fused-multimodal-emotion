@@ -14,7 +14,7 @@ class ProcessDataMultimodal:
     Attributes
     ----------
     text_data (array): array of shape [num_samples, 128]. Each row corresponds to a transcription
-    audio_data (array): array of shape [num_samples, 250.000]. Each row corresponds to a raw audio file
+    audio_data (array): array of shape [num_samples, 150.000]. Each row corresponds to a raw audio file
     labels (array): array of shape [num_samples] corresponding to the categories
     """
     def __init__(self, data_path, text_data_handler, audio_data_handler):
@@ -95,11 +95,11 @@ class ProcessDataMultimodal:
 
         Parameters
         ----------
-        train_audio_data (array): array of shape [num_train_samples, 250.000] with training samples as rows
+        train_audio_data (array): array of shape [num_train_samples, 150.000] with training samples as rows
         train_labels (array): array of shape [num_train_samples, num_categories] labels for training
-        test_audio_data (array): array of shape [num_test_samples, 250.000] with training samples as rows
+        test_audio_data (array): array of shape [num_test_samples, 150.000] with training samples as rows
         test_labels (array): array of shape [num_test_samples, num_categories] labels for training
-        val_audio_data (array): array of shape [num_val_samples, 250.000] with validation samples as rows
+        val_audio_data (array): array of shape [num_val_samples, 150.000] with validation samples as rows
         val_labels (array): array of shape [num_val_samples, num_categories] labels for validation
         batch_size (int): batch size (for the training set)
         num_epochs (int): number of epochs
@@ -114,7 +114,6 @@ class ProcessDataMultimodal:
         handle (string): handle string, to switch between the datasets
         """
         with tf.name_scope('dataset'):
-            # TODO: update method description
             # creating the training dataset
             train_dataset = tf.data.Dataset.from_tensor_slices((text_placeholder, audio_placeholder, label_placeholder))
             train_dataset = train_dataset.repeat(num_epochs)
