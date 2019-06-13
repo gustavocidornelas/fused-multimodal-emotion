@@ -5,7 +5,7 @@
 The project is comprised of the folders _data_, _model_, _parameters_ and _preprocessing_. After training a model, two other  folders are created, namely _graphs_ and _pretrained-models_.
 
 ### _data_
-Contains all the data used, in its raw and preprocessed stages. The dataset used is the [IEMOCAP database] (https://sail.usc.edu/iemocap/) .The IEMOCAP is available uppon request in the link provided. The data actually used by our model is preprocessed from the raw dataset. Our preprocessed data can be made available uppon request, provided that the person already has access to the IEMOCAP dataset. 
+Contains all the data used, in its raw and preprocessed stages. The dataset used is the [IEMOCAP database] (https://sail.usc.edu/iemocap/). The IEMOCAP is available uppon request in the link provided. The data actually used by our model is preprocessed from the raw dataset. Our preprocessed data can be made available uppon request, provided that the person already has access to the IEMOCAP dataset. 
 
 ### _model_
 Contains all of the implemented models. All the models have three main files: `train_[model].py`, `process_[model]_data.py`, `evaluate_[model].py`, where `[model]` is the model of interest (`text`, `audio`, `multimodal`, `multimodal_attention`). 
@@ -23,3 +23,16 @@ Created when the model starts training. Contains two folders: *graph_train* and 
 
 ### _pretrained-models_
 Created once the model is trained. Saves the whole model with its weights, that can be used to do inference later.
+
+## Running 
+To train a model, the first step is obtaining all the data. If you already have all the preprocessed data in the correct folder within the _data_ directory, you are good to go. If you would like to truncate the raw audio files differently, you can edit that in `/preprocessing/prepare_raw_audio.py` and run it once. The preprocessed raw audio files will be saved to the correct directory.
+
+Once you have all the data correctly placed, you can edit the model's parameters in `/parameters/parameters.py`. The parameters for all the models are in this single file, but they are organized in sections, so it is important that you edit the parameters in the correct section.
+
+With the correct parameters, it is time to train. The proportion of the data used to build the training, validation and test sets is hardcoded in `train_[model].py`. To train a model, you should run `train_[model].py`, where `[model]` is one of the options `text`, `audio`, `multimodal`, `multimodal_attention`. The model is evaluated on the validation set every 50 batches, but that can be changed in `train_[model].py` inside the training loop.
+
+After training, the model is evaluated on the test set and the full model is saved to `/pretrained-models`.
+
+
+
+
