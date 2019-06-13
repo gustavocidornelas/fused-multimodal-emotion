@@ -131,8 +131,8 @@ class MultimodalAttentionModel:
 
     def attention_mechanism(self, text_hidden_state):
         """
-        Implements Luong's attention mechanism between the current text model's hidden state and all of the
-        audio model hidden states and returns the context vector
+        Implements Luong's or Bahdanau's attention mechanism between the current text model's hidden state and all of
+        the audio model hidden states and returns the context vector
 
         Parameters
         ----------
@@ -149,8 +149,8 @@ class MultimodalAttentionModel:
         text_hidden_state = tf.reshape(text_hidden_state, [-1, 1, self.hidden_dim_text])
 
         # calculating the scores (similarity between the current text hidden state and all of the audio hidden states)
-        #score = tf.matmul(audio_hidden_states, text_hidden_state)
-        score = self.V(tf.nn.tanh(self.W1(audio_hidden_states) + self.W2(text_hidden_state)))
+        # score = tf.matmul(audio_hidden_states, text_hidden_state)  # Luong's attention
+        score = self.V(tf.nn.tanh(self.W1(audio_hidden_states) + self.W2(text_hidden_state)))  # Bahdanau's attention
 
         # calculating the attention weights
         attention_weights = tf.nn.softmax(score, dim=1, name='attention_weights')
