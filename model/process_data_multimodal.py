@@ -87,8 +87,8 @@ class ProcessDataMultimodal:
         return train_text_data, train_audio_data, train_labels, test_text_data, test_audio_data, test_labels, \
                val_text_data, val_audio_data, val_labels
 
-    def create_datasets(self, text_placeholder, audio_placeholder, label_placeholder, test_text_data, test_audio_data, test_labels, val_text_data, val_audio_data,
-                        val_labels, batch_size, num_epochs):
+    def create_datasets(self, text_placeholder, audio_placeholder, label_placeholder, test_text_data, test_audio_data,
+                        test_labels, val_text_data, val_audio_data, val_labels, batch_size, num_epochs):
         """
         Creates the training and validation datasets and returns the iterators, next elements of the dataset and the
         handle
@@ -101,6 +101,9 @@ class ProcessDataMultimodal:
         test_labels (array): array of shape [num_test_samples, num_categories] labels for training
         val_audio_data (array): array of shape [num_val_samples, 150.000] with validation samples as rows
         val_labels (array): array of shape [num_val_samples, num_categories] labels for validation
+        train_text_data (array): array of shape [num_train_samples, 128] with training samples as rows
+        test_text_data (array): array of shape [num_test_samples, 128] with testing samples as rows
+        val_text_data (array): array of shape [num_val_samples, 128] with validation samples as rows
         batch_size (int): batch size (for the training set)
         num_epochs (int): number of epochs
 
