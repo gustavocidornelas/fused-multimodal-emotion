@@ -12,7 +12,8 @@ from sklearn import preprocessing
 if __name__ == "__main__":
     """
     Script that gets the raw audio from the IEMOCAP dataset. Should be executed only once to get the FC_raw_audio.csv 
-    file, which contains the ids and audio samples for the data that is used by our model.
+    file, which contains the ids and audio samples for the data that is used by our model. We truncated/zero-padded
+    everything to 150.000 samples
     """
 
     # output file
@@ -24,8 +25,8 @@ if __name__ == "__main__":
 
     file_count = 0
 
-    # every audio should have the same length (250.000) for the batches
-    audio_data = np.zeros((len(ordered_ids), 250000))
+    # every audio should have the same length (150.000) for the batches
+    audio_data = np.zeros((len(ordered_ids), 150000))
 
     with open(out_file, "w") as f:
         # finding the corresponding .wav files specified in ordered_ids
@@ -43,13 +44,13 @@ if __name__ == "__main__":
             samples = preprocessing.scale(samples.astype(float))
 
             # zero padding the audio samples
-            if samples.shape[0] < 250000:
-                len_pad = 250000 - samples.shape[0]
+            if samples.shape[0] < 150000:
+                len_pad = 150000 - samples.shape[0]
                 zero_pad = np.zeros(len_pad)
                 padded_samples = np.concatenate((samples, zero_pad))
                 audio_data[row, :] = padded_samples
-            elif samples.shape[0] > 250000:
-                samples = samples[:250000]
+            elif samples.shape[0] > 150000:
+                samples = samples[:150000]
                 audio_data[row, :] = samples
 
             file_count += 1
