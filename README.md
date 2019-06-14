@@ -8,7 +8,7 @@ The code
 This repository was developed as part of my semester project at the [Chair for Mathematical Information Science](https://www.mins.ee.ethz.ch/index.html), at [ETH Zürich](https://www.ethz.ch/en.html) in Spring 2019. The full report with the detailed description of our approach is avaliable [here].
 
 - [Requirements](#requirements)
-- [Project structure](#structure)
+- [Project structure](#project-structure)
 - [Running](#running)
 - [References](#references)
 
