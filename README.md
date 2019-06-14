@@ -5,11 +5,11 @@ Multimodal emotion recognition, using speech and text. The proposed model is ins
 
 This repository was developed as part of my semester project at the [Chair for Mathematical Information Science](https://www.mins.ee.ethz.ch/index.html), at [ETH Zürich](https://www.ethz.ch/en.html) in Spring 2019. The full report with the detailed description of our approach is avaliable [here].
 
-- [Organization](#organization)
+- [Project structure](#project_structure)
 - [Running](#running)
 - [References](#references)
 
-## Organization
+## Project structure
 
 The project is comprised of the directories `data` , `model`, `parameters` and `preprocessing`. After training a model, two other  folders are created, namely `graphs` and `pretrained-models`.
 ###### data
